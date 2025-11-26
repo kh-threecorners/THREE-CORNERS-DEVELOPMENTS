@@ -1,0 +1,12 @@
+<odoo>
+    <record id="property_rental_contract_report" model="ir.actions.report">
+        <field name="name">Rental Contract</field>
+        <field name="model">property.rental</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">px_custom_real_estate_management.report_property_rental_contract_layout</field>
+        <field name="report_file">px_custom_real_estate_management.report_property_rental_contract_layout</field>
+        <field name="binding_model_id" ref="real_estate_management.model_property_rental"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="px_custom_real_estate_management.paperformat_property_contract"/>
+    </record>
+</odoo>

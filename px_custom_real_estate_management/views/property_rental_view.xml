@@ -1,0 +1,58 @@
+<odoo>
+    <record id="property_rental_view_form_inherit_custom" model="ir.ui.view">
+        <field name="name">property.rental.view.form.inherit.custom</field>
+        <field name="model">property.rental</field>
+        <field name="inherit_id" ref="real_estate_management.property_rental_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_create_contract']" position="after">
+                    <button name="action_generate_installment_invoices" string="Create Installment Invoices"
+                            type="object" class="oe_highlight" invisible="state not in ['draft']"/>
+                <button name="action_security_deposit_invoice" string="Security Deposit Invoice"
+                            type="object" class="oe_highlight" invisible="state not in ['draft']"/>
+                <button name="action_generate_repair_invoices" string="Maintenance Invoice"
+                            type="object" class="oe_highlight" invisible="state not in ['draft']"/>
+            </xpath>
+            <xpath expr="//field[@name='rent_price']"  position="after">
+                <group string="Contract Details">
+                    <field name="rent_type"/>
+                    <field name="monthly_rent"/>
+                    <field name="security_deposit"/>
+                    <field name="contract_date"/>
+                    <field name="confirmation_date"/>
+                    <field name="duration"/>
+                </group>
+            </xpath>
+            <xpath expr="//notebook/page[1]" position="replace">
+                <page string="Installments">
+                    <field name="installment_ids">
+                        <list editable="bottom">
+                            <field name="installment_date"/>
+                            <field name="amount"/>
+                            <field name="state" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Maintenance">
+                    <field name="repairs_ids">
+                        <list editable="bottom">
+                            <field name="repair_name"/>
+                            <field name="repair_cost"/>
+                            <field name="state" readonly="1"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="property_rental_view_tree_inherit_custom" model="ir.ui.view">
+        <field name="name">property.rental.view.tree.inherit.custom</field>
+        <field name="model">property.rental</field>
+        <field name="inherit_id" ref="real_estate_management.property_rental_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="installment_ids"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+

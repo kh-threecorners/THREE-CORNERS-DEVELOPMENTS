@@ -1,0 +1,20 @@
+{
+    'name': 'Unique Contact',
+    'version': '1.0',
+    'summary': 'Making The Contact Unique',
+    'description': 'Making The Contact Unique.',
+    'author': 'Mohamed Hamed',
+    'depends': ['base', 'account', 'crm'],
+    'data': [
+        'security/ir.model.access.csv',
+        'wizard/import_excel_wizard_views.xml',
+        # 'wizard/skipped_view.xml',
+        'views/view.xml',
+        'views/duplicated_opportunities.xml',
+        # 'views/crm_inherit.xml',
+        'views/skipped_lead.xml',
+    ],
+    'installable': True,
+    'application': False,
+    'auto_install': False,
+}

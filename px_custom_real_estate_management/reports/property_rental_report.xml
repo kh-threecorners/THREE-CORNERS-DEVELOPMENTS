@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- Template -->
+   <template id="report_property_rental_contract_layout">
+    <t t-call="web.html_container">
+      <t t-foreach="docs" t-as="o">
+        <t t-call="web.external_layout">
+          <div class="page">
+            <!-- Header -->
+            <div class="row" style="border-bottom:1px solid #444;padding-bottom:6px;margin-bottom:16px;">
+              <div class="col-6">
+                <h3 style="margin:0;">Your logo</h3>
+                <div t-if="o.company_id">
+                  <span t-esc="o.company_id.name"/><br/>
+                  <span t-esc="o.company_id.street"/><t t-if="o.company_id.street2">, <t t-esc="o.company_id.street2"/></t><br/>
+                  <span t-esc="o.company_id.city"/> <t t-if="o.company_id.state_id">, <t t-esc="o.company_id.state_id.name"/></t><br/>
+                  <span t-esc="o.company_id.country_id.name"/>
+                </div>
+              </div>
+              <div class="col-6" style="text-align:right;">
+                <h4 style="margin:0;">TNCY/<t t-esc="o.name"/></h4>
+              </div>
+            </div>
+
+            <!-- Top meta blocks -->
+            <div class="row" style="font-size:12px;">
+              <div class="col-6">
+                <table class="table table-sm no-border">
+                  <tbody>
+                      <tr><td><strong>Property</strong></td><td>:</td><td t-esc="o.property_id.display_name"/></tr>
+                      <tr><td><strong>Confirmation Date</strong></td><td>:</td><td t-esc="o.confirmation_date"/></tr>
+<!--                    <tr><td><strong>Property Owner</strong></td><td>:</td><td t-esc="o.property_id.landlord_id.name"/></tr>-->
+                  </tbody>
+                </table>
+              </div>
+              <div class="col-6">
+                <table class="table table-sm no-border">
+                  <tbody>
+                    <tr><td><strong>Tenant</strong></td><td>:</td><td t-esc="o.renter_id.display_name"/></tr>
+                    <tr><td><strong>Contract Date</strong></td><td>:</td><td t-esc="o.contract_date"/></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Tenancy Details -->
+            <h5 style="margin-top:10px;">Tenancy Details</h5>
+            <table class="table table-sm no-border" style="font-size:12px;">
+              <tbody>
+                <tr>
+                  <td style="width:25%;"><strong>Rent Type</strong></td><td style="width:5%;">:</td>
+                  <td style="width:20%;"><t t-esc="o.rent_type or '—'"/></td>
+                  <td style="width:25%;"><strong>Start Date</strong></td><td style="width:5%;">:</td>
+                  <td style="width:20%;"><t t-esc="o.start_date"/></td>
+                </tr>
+                <tr>
+                  <td><strong>Monthly Rent</strong></td><td>:</td>
+                  <td><span t-esc="o.property_id.currency_id.symbol"/> <t t-esc="o.monthly_rent"/></td>
+                  <td><strong>Duration</strong></td><td>:</td>
+                  <td><t t-esc="o.duration"/> Months</td>
+                </tr>
+                <tr>
+                  <td><strong>Security Deposit</strong></td><td>:</td>
+                  <td><span t-esc="o.property_id.currency_id.symbol"/> <t t-esc="o.security_deposit"/></td>
+                  <td><strong>End Date</strong></td><td>:</td>
+                  <td><t t-esc="o.end_date"/></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Rent Schedule -->
+            <h5 style="margin-top:10px;">Rent Schedule</h5>
+            <table class="table table-sm" style="font-size:12px;">
+              <thead>
+                <tr>
+                  <th style="width:30%;">Name</th>
+                  <th style="width:20%;">Date</th>
+                  <th style="width:15%;">Status</th>
+                  <th style="width:15%;">Payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                <t t-foreach="o.installment_ids.sorted(key=lambda r: (r.installment_date or ''))" t-as="line">
+                  <tr>
+                    <td>
+                      <t t-esc="'RENT/%s' % (line.id)"/>
+                    </td>
+                    <td t-esc="line.installment_date"/>
+                    <td style="text-align:right;">
+                    </td>
+                    <td>
+                      <t t-esc=" 'Paid' if line.state == 'paid' else 'Unpaid' "/>
+                    </td>
+                    <td>
+                      <t t-esc=" 'Draft Payment' if line.state != 'paid' else '—' "/>
+                    </td>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+
+            <!-- Maintenance -->
+            <h5 style="margin-top:10px;">Maintenance Details</h5>
+            <table class="table table-sm" style="font-size:12px;">
+              <thead>
+                <tr>
+                  <th style="width:70%;">Maintenance Type</th>
+                  <th style="width:30%; text-align:right;">Maintenance Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <t t-foreach="o.repairs_ids" t-as="rep">
+                  <tr>
+                    <td t-esc="rep.repair_name"/>
+                    <td style="text-align:right;">
+                      <span t-esc="o.property_id.currency_id.symbol"/> <t t-esc="rep.repair_cost,"/>
+                    </td>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+
+            <p style="margin-top:24px; font-size:11px; color:#555;">
+              This is a system generated tenancy printout.
+            </p>
+          </div>
+        </t>
+      </t>
+    </t>
+  </template>
+
+  <!-- Bind template name -->
+</odoo>

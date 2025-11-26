@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id,perm_read,perm_write,perm_create,perm_unlink
+access_import_excel_wizard,access_import_excel_wizard,model_import_excel_wizard,,1,1,1,0
+access_skipped_leads_wizard,access.skipped.leads.wizard,model_skipped_leads_wizard,,1,0,1,0
+access_skipped_leads_line,access.skipped.leads.line,model_skipped_leads_line,,1,0,1,0
+access_skipped_lead,access.skipped.lead,model_skipped_lead,,1,1,1,1

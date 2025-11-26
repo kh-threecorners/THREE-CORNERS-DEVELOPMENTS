@@ -1,0 +1,61 @@
+<!--##############################################################################-->
+<!--#    Copyright (C) 2023.-->
+<!--#    Author: Eng.Mohamed Reda Mahfouz (<mohamed.reda741@gmail.com>)-->
+<!--#-->
+<!--#-->
+<!--#    It is forbidden to publish, distribute, sublicense, or sell copies-->
+<!--#    of the Software or modified copies of the Software.-->
+<!--##############################################################################-->
+<odoo>
+    <data>
+        <record id="view_crm_lead_form_aqar_inherit_branch" model="ir.ui.view">
+            <field name="name">crm.lead.form.aqar</field>
+            <field name="model">crm.lead</field>
+            <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button class="oe_stat_button" type="object" name="action_view_bookings"
+                            icon="fa-building-o" invisible="booking_count == 0">
+                        <field name="booking_count" widget="statinfo" string="Bookings"/>
+                    </button>
+                </xpath>
+                <xpath expr="//header" position="inside">
+                    <button string="Create Booking"
+                            type="object" name="action_create_property_booking"
+                            class="btn-primary"/>
+                </xpath>
+                <xpath expr="//group[@name='opportunity_partner']" position="inside">
+                    <field name="phone" widget="phone"/>
+                    <field name="property_project_id"/>
+                    <field name="property_id" domain="[('state', '!=', 'sold')]"/>
+                    <field name="property_price"/>
+                    <field name="call_counter" readonly="1"/>
+                    <field name="whatsapp_counter" readonly="1"/>
+                    <field name="message_counter" readonly="1"/>
+                    <field name="currency_id" invisible="1"/>
+                </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page name="customer_requirements" string="Customer Requirements">
+                        <group>
+                            <group>
+                                <field name="req_property_type"/>
+                                <field name="req_property_size"/>
+                                <field name="req_property_bedrooms"/>
+                            </group>
+                            <group>
+                                <field name="req_property_bathrooms"/>
+                                <field name="req_floor"/>
+                                <field name="req_price"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+
+<!--                <xpath expr="//field[@id='mobile_page_lead']" position="attributes">-->
+<!--                    <attribute name="invisible">1</attribute>-->
+<!--                </xpath>-->
+
+            </field>
+        </record>
+    </data>
+</odoo>

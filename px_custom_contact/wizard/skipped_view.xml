@@ -1,0 +1,24 @@
+<odoo>
+    <record id="view_skipped_leads_wizard_form" model="ir.ui.view">
+    <field name="name">skipped.leads.wizard.form</field>
+    <field name="model">skipped.leads.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Duplicated Opportunities">
+            <group>
+                <field name="skipped_ids">
+                    <list editable="false">
+                        <field name="name"/>
+                        <field name="user_id"/>
+                        <field name="stage_id"/>
+                        <field name="phone"/>
+                    </list>
+                </field>
+            </group>
+            <footer>
+                <button string="Close" class="btn-secondary" special="cancel"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+</odoo>

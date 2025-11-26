@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Property auction action -->
+    <record id="property_auction_action" model="ir.actions.act_window">
+        <field name="name">Property Auction</field>
+        <field name="res_model">property.auction</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Property Auction
+            </p></field>
+    </record>
+    <!-- Property auction menui tems -->
+    <menuitem action="property_auction_action" id="property_auction_menu" name="Property Auction" parent="property_menu" sequence="10"/>
+    <!-- Property auction form view -->
+    <record id="property_auction_view_form" model="ir.ui.view">
+        <field name="name">property.auction.view.from</field>
+        <field name="model">property.auction</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" statusbar_visible="draft,confirmed,started" widget="statusbar"/>
+                    <button class="oe_highlight" invisible="not state" name="action_confirm" string="Confirm" type="object"/>
+                    <button class="oe_highlight" invisible="not state" name="action_start" string="Start" type="object"/>
+                    <button class="oe_highlight" invisible="not state" name="action_end" string="End" type="object"/>
+                    <button class="oe_highlight" invisible="not state or sold" name="action_create_sale_order" string="Create Sale Order" type="object"/>
+                    <button invisible="state in ['draft', 'ended']" name="action_cancel" string="Cancel" type="object"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-dollar" invisible="not sold" name="action_view_sale_order" string="Sale Order" type="object"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="auction_seq"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="property_id"/>
+                            <field name="responsible_id"/>
+                            <field name="start_time"/>
+                            <field name="end_time"/>
+                        </group>
+                        <group>
+                            <field invisible="1" name="sold"/>
+                            <field name="bid_start_price"/>
+                            <field name="final_price"/>
+                            <field name="auction_winner_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Participant">
+                            <field name="participant_ids" readonly="not state">
+                                <list editable="bottom">
+                                    <field name="partner_id"/>
+                                    <field name="bid_time"/>
+                                    <field name="bid_amount"/>
+                                </list></field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form></field>
+    </record>
+    <!-- Property auction tree view -->
+    <record id="property_auction_view_tree" model="ir.ui.view">
+        <field name="name">property.auction.view.tree</field>
+        <field name="model">property.auction</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="auction_seq"/>
+                <field name="property_id"/>
+                <field name="responsible_id"/>
+                <field name="bid_start_price"/>
+                <field name="final_price"/>
+                <field name="start_time"/>
+                <field name="auction_winner_id"/>
+                <field name="state"/>
+            </list></field>
+    </record>
+</odoo>

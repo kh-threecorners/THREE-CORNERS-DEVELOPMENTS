@@ -1,0 +1,129 @@
+<odoo>
+<!--    &lt;!&ndash; Tree View &ndash;&gt;-->
+<!--    <record id="view_skipped_lead_tree" model="ir.ui.view">-->
+<!--        <field name="name">skipped.lead.tree</field>-->
+<!--        <field name="model">skipped.lead</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <list>-->
+<!--                <field name="name"/>-->
+<!--                <field name="phone"/>-->
+<!--                <field name="user_id"/>-->
+<!--                <field name="stage_id"/>-->
+<!--                <field name="import_date"/>-->
+<!--            </list>-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    &lt;!&ndash; Kanban View &ndash;&gt;-->
+<!--    <record id="view_skipped_lead_kanban" model="ir.ui.view">-->
+<!--        <field name="name">skipped.lead.kanban</field>-->
+<!--        <field name="model">skipped.lead</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <kanban default_group_by="stage_id"-->
+<!--                    class="o_kanban_small_column o_opportunity_kanban"-->
+<!--                    on_create="quick_create"-->
+<!--                    quick_create_view="crm.quick_create_opportunity_form"-->
+<!--                    archivable="false"-->
+<!--                    sample="1"-->
+<!--                    js_class="crm_kanban">-->
+<!--                <field name="stage_id" options='{"group_by_tooltip": {"requirements": "Description"}}'/>-->
+<!--                <field name="probability"/>-->
+<!--                <field name="name"/>-->
+<!--                <field name="phone"/>-->
+<!--                <field name="user_id"/>-->
+<!--                <field name="import_date"/>-->
+<!--                <templates>-->
+<!--                    <t t-name="kanban-box">-->
+<!--                        <div class="oe_kanban_global_click o_kanban_card">-->
+<!--                            <strong><field name="name"/></strong><br/>-->
+<!--                            <field name="phone"/><br/>-->
+<!--                            <field name="user_id"/><br/>-->
+<!--                            <field name="stage_id"/><br/>-->
+<!--                            <small><field name="import_date"/></small>-->
+<!--                        </div>-->
+<!--                    </t>-->
+<!--                </templates>-->
+<!--            </kanban>-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--     Form View-->
+<!--    <record id="view_skipped_lead_form" model="ir.ui.view">-->
+<!--        <field name="name">skipped.lead.form</field>-->
+<!--        <field name="model">skipped.lead</field>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <form>-->
+<!--                <sheet>-->
+<!--                    <group>-->
+<!--                        <field name="lead_id"/>-->
+<!--                        <field name="import_date"/>-->
+<!--                    </group>-->
+<!--                    <group string="Lead Details" col="2">-->
+<!--                        <field name="stage_id"/>-->
+<!--                        <field name="probability"/>-->
+<!--                        <field name="active" invisible="1"/>-->
+<!--                        <field name="company_id" invisible="1"/>-->
+<!--                        <field name="name"/>-->
+<!--                        <field name="phone"/>-->
+<!--                        <field name="user_id"/>-->
+<!--                        <field name="import_date"/>-->
+<!--                    </group>-->
+<!--                    <group>-->
+<!--                        <group>-->
+<!--&lt;!&ndash;                        <group name="lead_partner" invisible="type == 'opportunity'">&ndash;&gt;-->
+<!--&lt;!&ndash;                            <field name="is_partner_visible" invisible='1'/>&ndash;&gt;-->
+<!--&lt;!&ndash;                            <field name="partner_id" widget="res_partner_many2one"&ndash;&gt;-->
+<!--&lt;!&ndash;                                    context="{&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_name': contact_name,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_title': title,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_street': street,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_street2': street2,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_city': city,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_state_id': state_id,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_zip': zip,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_country_id': country_id,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_function': function,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_phone': phone,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_mobile': mobile,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_email': email_from,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_user_id': user_id,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_team_id': team_id,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_website': website,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'default_lang': lang_code,&ndash;&gt;-->
+<!--&lt;!&ndash;                                        'show_vat': True&ndash;&gt;-->
+<!--&lt;!&ndash;                                    }" invisible="not is_partner_visible"/>&ndash;&gt;-->
+<!--                            <field name="partner_name"/>-->
+<!--                            <label for="street" string="Address"/>-->
+<!--                            <div class="o_address_format">-->
+<!--                                <field name="street" placeholder="Street..." class="o_address_street"/>-->
+<!--                                <field name="street2" placeholder="Street 2..." class="o_address_street"/>-->
+<!--                                <field name="city" placeholder="City" class="o_address_city"/>-->
+<!--                                <field name="state_id" class="o_address_state" placeholder="State" options='{"no_open": True}'/>-->
+<!--                                <field name="zip" placeholder="ZIP" class="o_address_zip"/>-->
+<!--                                <field name="country_id" placeholder="Country" class="o_address_country" options='{"no_open": True, "no_create": True}'/>-->
+<!--                            </div>-->
+<!--                            <field name="website" widget="url" placeholder="e.g. https://www.odoo.com"/>-->
+<!--                            <field name="lang_active_count" invisible="1"/>-->
+<!--                            <field name="lang_code" invisible="1"/>-->
+<!--                            <field name="lang_id" invisible="lang_active_count &lt;= 1"-->
+<!--                                options="{'no_quick_create': True, 'no_create_edit': True, 'no_open': True}"/>-->
+<!--                        </group>-->
+<!--                    </group>-->
+<!--                </sheet>-->
+<!--            </form>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- Action -->
+<!--    <record id="action_skipped_leads" model="ir.actions.act_window">-->
+<!--        <field name="name">Duplicated Opportunities</field>-->
+<!--        <field name="res_model">skipped.lead</field>-->
+<!--        <field name="view_mode">kanban,list,form</field>-->
+<!--    </record>-->
+
+<!--    &lt;!&ndash; Menu &ndash;&gt;-->
+<!--    <menuitem id="menu_skipped_leads"-->
+<!--              name="Duplicated Opportunities"-->
+<!--              parent="crm.crm_menu_root"-->
+<!--              action="action_skipped_leads"/>-->
+</odoo>

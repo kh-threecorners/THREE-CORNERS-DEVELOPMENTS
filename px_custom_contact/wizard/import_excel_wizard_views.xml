@@ -1,0 +1,63 @@
+<odoo>
+    <record id="view_import_excel_wizard_form" model="ir.ui.view">
+        <field name="name">import.excel.wizard.form</field>
+        <field name="model">import.excel.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Import Excel File">
+                <group>
+                    <!-- لازم أربط الـ Binary بالـ filename -->
+                    <field name="file" filename="filename"/>
+                    <field name="filename" invisible="1"/>
+                </group>
+                <footer>
+                    <button name="import_contacts_from_excel" type="object" string="Import" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_import_excel_wizard" model="ir.actions.act_window">
+        <field name="name">Import Excel</field>
+        <field name="res_model">import.excel.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!--    <menuitem id="menu_import_excel_wizard"-->
+    <!--              name="Import Leads Excel"-->
+    <!--              parent="crm.crm_menu_root"-->
+    <!--              action="action_import_excel_wizard"/>-->
+</odoo>
+
+
+        <!--<odoo>-->
+        <!--    <record id="view_import_excel_wizard_form" model="ir.ui.view">-->
+        <!--        <field name="name">import.excel.wizard.form</field>-->
+        <!--        <field name="model">import.excel.wizard</field>-->
+        <!--        <field name="arch" type="xml">-->
+        <!--            <form string="Import Excel File">-->
+        <!--                <group>-->
+        <!--                    <field name="file"/>-->
+        <!--                </group>-->
+        <!--                <footer>-->
+        <!--                    <button name="import_contacts_from_excel" type="object" string="Import" class="btn-primary"/>-->
+        <!--                    <button string="Cancel" class="btn-secondary" special="cancel"/>-->
+        <!--                </footer>-->
+        <!--            </form>-->
+        <!--        </field>-->
+        <!--    </record>-->
+
+        <!--    <record id="action_import_excel_wizard" model="ir.actions.act_window">-->
+        <!--        <field name="name">Import Excel</field>-->
+        <!--        <field name="res_model">import.excel.wizard</field>-->
+        <!--        <field name="view_mode">form</field>-->
+        <!--        <field name="target">new</field>-->
+        <!--    </record>-->
+
+        <!--    <menuitem id="menu_import_excel_wizard"-->
+        <!--              name="Import Leads Excel"-->
+        <!--              parent="crm.crm_menu_root"-->
+        <!--              action="action_import_excel_wizard"/>-->
+
+        <!--</odoo>-->

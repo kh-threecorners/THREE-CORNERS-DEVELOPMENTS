@@ -1,0 +1,31 @@
+<odoo>
+    <!-- Tree View for Property Rental Installments -->
+    <record id="property_rental_installment_tree_view" model="ir.ui.view">
+        <field name="name">property.rental.installment.tree</field>
+        <field name="model">property.rental.installment</field>
+        <field name="arch" type="xml">
+            <list string="Property Rental Installments" editable="bottom" decoration-success="state=='paid'">
+                <field name="rental_id" string="Contract"/>
+                <field name="renter_id" string="Renter"/>
+                <field name="property_id" string="Property"/>
+                <field name="installment_date" string="Installment Date"/>
+                <field name="invoice_id" string="Invoice"/>
+                <field name="amount" string="Amount"/>
+                <field name="state" string="Status"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action for the Tree View -->
+    <record id="action_property_rental_installments" model="ir.actions.act_window">
+        <field name="name">Installments</field>
+        <field name="res_model">property.rental.installment</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu Item -->
+    <menuitem id="menu_property_rental_installments"
+              name="Rent schedule"
+              parent="real_estate_management.property_menu"
+              action="action_property_rental_installments"/>
+</odoo>

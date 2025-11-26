@@ -1,0 +1,20 @@
+<odoo>
+    <record id="view_res_partner_filter_inherit_customers_only" model="ir.ui.view">
+        <field name="name">res.partner.filter.customers.only</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter name="only_customers" string="Contacts"
+                        domain="[('user_ids', '=', False)]"/>
+                <filter name="independent_persons_filter" string="Customers"
+                        domain="[('is_company', '=', False), ('parent_id', '=', False)]"/>
+                <filter name="only_customers_filter" string="Employees"
+                        domain="[('is_company', '=', False), ('parent_id', '!=', False)]"/>
+                <filter name="crm_customers_filter" string="CRM Customers"
+                        domain="[('opportunity_ids', '!=', False)]"/>
+
+            </xpath>
+        </field>
+    </record>
+</odoo>

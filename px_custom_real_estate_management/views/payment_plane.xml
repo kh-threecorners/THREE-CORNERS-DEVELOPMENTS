@@ -1,0 +1,88 @@
+<odoo>
+
+    <record id="action_payment_plan" model="ir.actions.act_window">
+        <field name="name">Payment Plans</field>
+        <field name="res_model">payment.plane</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_payment_plan"
+              name="Payment Plans"
+              parent="real_estate_management.property_configuration_menu"
+              sequence="10"
+              action="action_payment_plan"/>
+
+    <record id="view_payment_plan_form" model="ir.ui.view">
+        <field name="name">payment.plan.form</field>
+        <field name="model">payment.plane</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="generate_installment_lines_button" type="object"
+                            string="Generate Installment Lines" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="e.g. 5-Year Plan with 10% Annual"/></h1>
+                    </div>
+                    <group>
+                        <group id="left-col">
+<!--                            <field name="is_template"/>-->
+                            <field name="property_id"/>
+<!--                            <field name="opportunity_id" domain="[('property_id', '=', property_id)]"/>-->
+<!--                            <field name="company_id" groups="base.group_multi_company"/>-->
+<!--                            <field name="currency_id" invisible="1"/>-->
+                        </group>
+                        <group id="right-col">
+                            <field name="payment_start_date"/>
+                            <field name="payment_duration"/>
+                        </group>
+                    </group>
+
+                    <group string="Pricing and Down Payment">
+                        <group>
+                            <field name="unit_price" widget="monetary"/>
+                            <field name="discount" widget="percentage"/>
+                            <field name="price_after_discount" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="down_payment_percentage" widget="percentage"/>
+                            <field name="down_payment" widget="monetary"/>
+                        </group>
+                    </group>
+
+                    <group string="Installment Calculation">
+                        <group>
+                            <separator string="Annual Payments"/>
+                            <field name="annual_payment_percentage" widget="percentage"/>
+                            <field name="total_annual_payment_amount" widget="monetary"/>
+                        </group>
+                        <group>
+                            <separator string="Periodic Payments"/>
+                            <field name="payment_frequency"/>
+                            <field name="amount_to_be_installed" widget="monetary"/>
+                            <field name="no_of_installments" readonly="1"/>
+                            <field name="amount_per_installment" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Installment Schedule">
+                            <field name="installment_line_ids">
+                                <list editable="bottom">
+                                    <field name="sequence"/>
+                                    <field name="due_date"/>
+                                    <field name="name"/>
+                                    <field name="type" readonly="1"/>
+                                    <field name="amount" sum="Total"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

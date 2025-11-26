@@ -1,0 +1,15 @@
+<odoo>
+    <!-- Action -->
+    <record id="action_crm_lead_duplicates" model="ir.actions.act_window">
+        <field name="name">Duplicated Opportunities</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('duplicate', '=', True)]</field>
+    </record>
+
+    <!-- Menu -->
+    <!--    <menuitem id="menu_crm_lead_duplicates"-->
+    <!--              name="Duplicated Opportunities"-->
+    <!--              parent="crm.crm_menu_root"-->
+    <!--              action="action_crm_lead_duplicates"/>-->
+</odoo>
