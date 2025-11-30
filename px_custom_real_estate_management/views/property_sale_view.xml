@@ -12,10 +12,10 @@
                         invisible="state not in ['draft','invisible']"
                 />
                 <button name="action_broker_commission_invoice"
-                    type="object"
-                    string="Broker Commission Invoice"
-                    class="btn-primary"
-                    invisible="not broker_id"/>
+                        type="object"
+                        string="Broker Commission Invoice"
+                        class="btn-primary"
+                        invisible="not broker_id"/>
 
                 <button name="action_cancel" type="object" string="Cancel"
                         class="btn-secondary"
@@ -25,7 +25,37 @@
                         class="btn-primary"
                         invisible="state not in ['proposed']"
                         groups="real_estate_management.booking_sale_approval"/>
+
+                <button name="action_create_sale_order"
+                        type="object"
+                        string="Create Sale Order"
+                        invisible="state != 'draft'"
+                        class="btn-primary"/>
+
+                <button name="action_create_invoice"
+                        type="object"
+                        string="Create Invoice"
+                        invisible="state != 'draft'"
+                        class="btn-secondary"/>
+
             </header>
+            <xpath expr="//sheet" position="inside">
+                <div name="oe_button_box">
+                    <button name="action_view_sale_order"
+                            type="object"
+                            string="Sale Order"
+                            class="oe_stat_button"
+                            icon="fa-shopping-cart"
+                            invisible="not sale_order_id"/>
+
+                    <button name="action_view_invoice"
+                            type="object"
+                            string="Invoice"
+                            class="oe_stat_button"
+                            icon="fa-file-invoice"
+                            invisible="not invoice_id"/>
+                </div>
+            </xpath>
             <xpath expr="//field[@name='property_id']" position="after">
                 <field name="reservation_duration_hours"/>
                 <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
@@ -64,9 +94,9 @@
                     <group>
                         <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
                     </group>
-                        <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': id}">
-<!--                    <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': active_id}">-->
-                            <list create="false" edit="false" delete="false">
+                    <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': id}">
+                        <!--                    <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': active_id}">-->
+                        <list create="false" edit="false" delete="false">
                             <field name="serial_number"/>
                             <field name="name"/>
                             <field name="capital_repayment"/>

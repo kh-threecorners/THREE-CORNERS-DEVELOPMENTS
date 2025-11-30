@@ -1,5 +1,5 @@
 from odoo import models, api, _, fields
-from dateutil.relativedelta import relativedelta  # Import relativedelta
+from dateutil.relativedelta import relativedelta
 
 
 class SaleOrder(models.Model):
@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
         string="SO Installment Invoices",
         compute="_compute_so_installment_invoice_count"
     )
-
+    property_sale_id = fields.Many2one('property.sale', string="Property Sale")
     @api.depends('installment_line_ids')
     def _compute_so_installment_invoice_count(self):
         for order in self:
@@ -60,7 +60,7 @@ class SaleOrder(models.Model):
     @api.onchange('property_id', 'payment_id')
     def _onchange_payment_plan(self):
         for order in self:
-            order.installment_line_ids = [(5, 0, 0)]  # مسح الخطوط القديمة
+            order.installment_line_ids = [(5, 0, 0)]
             if not order.property_id or not order.payment_id:
                 continue
 
@@ -80,7 +80,6 @@ class SaleOrder(models.Model):
             seq = 1
             current_date = plan.payment_start_date
 
-            # ➤ الدفعة الأولى (Down Payment)
             if down_payment > 0:
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -92,7 +91,6 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            # ➤ الأقساط الدورية
             interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
             for i in range(1, no_of_installments + 1):
                 current_date += relativedelta(months=interval_months)
@@ -106,7 +104,6 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            # ➤ الأقساط السنوية
             for i in range(1, plan.payment_duration + 1):
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -118,7 +115,6 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            # ✅ ➤ إضافة قسط الصيانة في النهاية (Maintenance Installment)
             maintenance_value = order.property_id.maintenance_value or 0.0
             if maintenance_value > 0:
                 last_date = lines[-1][2]['collection_date'] if lines else plan.payment_start_date
@@ -128,81 +124,19 @@ class SaleOrder(models.Model):
                     'capital_repayment': maintenance_value,
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
-                    'collection_date': last_date + relativedelta(days=1),  # بعد آخر قسط بيوم
+                    'collection_date': last_date + relativedelta(days=1),
                 }))
 
-            # حفظ الخطوط
             order.installment_line_ids = lines
 
-    # @api.onchange('property_id', 'payment_id')
-    # def _onchange_payment_plan(self):
-    #     for order in self:
-    #         order.installment_line_ids = [(5, 0, 0)]  # مسح الخطوط القديمة
-    #         if not order.property_id or not order.payment_id:
-    #             continue
-    #
-    #         plan = order.payment_id
-    #         unit_price = order.property_id.unit_price or 0.0
-    #         discounted_price = unit_price - (unit_price * (plan.discount / 100.0))
-    #         down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
-    #         remaining_after_down = discounted_price - down_payment
-    #         annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
-    #         amount_to_be_installed = remaining_after_down - (annual_amount * plan.payment_duration)
-    #
-    #         multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
-    #         no_of_installments = plan.payment_duration * multiplier
-    #         amount_per_installment = amount_to_be_installed / no_of_installments if no_of_installments else 0
-    #
-    #         lines = []
-    #         seq = 1
-    #         current_date = plan.payment_start_date
-    #
-    #         # إضافة الدفعة الأولى
-    #         if down_payment > 0:
-    #             lines.append((0, 0, {
-    #                 'sequence': seq,
-    #                 'name': 'Down Payment',
-    #                 'capital_repayment': down_payment,
-    #                 'remaining_capital': remaining_after_down,
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': plan.payment_start_date,
-    #             }))
-    #             seq += 1
-    #
-    #         # الأقساط الدورية
-    #         interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
-    #         for i in range(1, no_of_installments + 1):
-    #             current_date += relativedelta(months=interval_months)
-    #             lines.append((0, 0, {
-    #                 'sequence': seq,
-    #                 'name': f'Periodic Installment {i}',
-    #                 'capital_repayment': amount_per_installment,
-    #                 'remaining_capital': remaining_after_down - (i * amount_per_installment),
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': current_date,
-    #             }))
-    #             seq += 1
-    #
-    #         # الأقساط السنوية
-    #         for i in range(1, plan.payment_duration + 1):
-    #             lines.append((0, 0, {
-    #                 'sequence': seq,
-    #                 'name': f'Annual Installment {i}',
-    #                 'capital_repayment': annual_amount,
-    #                 'remaining_capital': remaining_after_down - (i * annual_amount),
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': plan.payment_start_date + relativedelta(years=i),
-    #             }))
-    #             seq += 1
-    #
-    #         order.installment_line_ids = lines
+
 
     @api.onchange('property_id')
     def _onchange_property_add_product(self):
         for order in self:
             if order.property_id and order.property_id.product_id:
                 product = order.property_id.product_id
-                order.order_line = [(5, 0, 0)]  # تمسح أي خطوط موجودة
+                order.order_line = [(5, 0, 0)]
                 order.order_line = [(0, 0, {
                     'product_id': product.id,
                     'name': product.name,
@@ -215,34 +149,6 @@ class SaleOrder(models.Model):
         for order in self:
             order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
 
-    # def action_create_installment_invoices_from_so(self):
-    #     """Create invoices for installment lines from Sale Order directly."""
-    #     invoices = self.env['account.move']
-    #     for order in self:
-    #         if order.installment_invoice_exist:
-    #             continue  # لو الفواتير موجودة خلاص
-    #
-    #         for line in order.installment_line_ids:
-    #             if line.collection_status == 'collected':
-    #                 continue  # نتخطى الأقساط اللي تم تحصيلها
-    #
-    #             invoice_vals = order._prepare_invoice()
-    #             invoice_vals.update({
-    #                 'invoice_date': line.collection_date,
-    #                 'sale_order_id': order.id,
-    #                 'sale_order_installment_id': line.id,  # استخدم الحقل الجديد
-    #                 'invoice_line_ids': [(0, 0, {
-    #                     'product_id': order.order_line[0].product_id.id if order.order_line else False,
-    #                     'quantity': 1,
-    #                     'price_unit': line.capital_repayment,
-    #                     'name': line.name,
-    #                 })],
-    #             })
-    #
-    #             invoices |= self.env['account.move'].create(invoice_vals)
-    #
-    #         order.installment_invoice_created = True
-    #     return invoices
 
     def action_create_installment_invoices_from_so(self):
         invoices = self.env['account.move']
@@ -258,7 +164,7 @@ class SaleOrder(models.Model):
                 invoice_vals.update({
                     'invoice_date': line.collection_date,
                     'sale_order_id': order.id,
-                    'sale_order_installment_id': line.id,  # الحقل الجديد
+                    'sale_order_installment_id': line.id,
                     'invoice_line_ids': [(0, 0, {
                         'product_id': order.order_line[0].product_id.id if order.order_line else False,
                         'quantity': 1,

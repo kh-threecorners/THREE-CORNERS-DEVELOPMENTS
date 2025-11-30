@@ -19,6 +19,8 @@ class PropertySale(models.Model):
         'sale_id',
         string="Installments"
     )
+    sale_order_id = fields.Many2one("sale.order", string="Sale Order", readonly=True)
+    invoice_id = fields.Many2one("account.move", string="Invoice", readonly=True)
 
     def action_broker_commission_invoice(self):
         for rec in self:
@@ -56,13 +58,19 @@ class PropertySale(models.Model):
         for rec in self:
             rec.state = "draft"
 
+
     @api.model
-    def create(self, vals):
-        """Prevent creating a sale if the property is sold"""
-        property_id = self.env["property.property"].browse(vals.get("property_id"))
-        if property_id and property_id.state == "sold":
-            raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
-        return super(PropertySale, self).create(vals)
+    def create(self, vals_list):
+        records = []
+        for vals in vals_list:
+            property_id = self.env["property.property"].browse(vals.get("property_id"))
+            if property_id and property_id.state == "sold":
+                raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
+
+            rec = super(PropertySale, self).create(vals)
+            records.append(rec)
+
+        return records[0] if len(records) == 1 else records
 
     def write(self, vals):
         """Prevent changing to a sold property in write"""
@@ -152,6 +160,105 @@ class PropertySale(models.Model):
                     seq += 1
 
             rec.property_sale_line_ids = lines
+
+    def action_create_sale_order(self):
+        """
+        Create a linked Sale Order for this Property Sale.
+        Ensures the property has a product and the customer is set.
+        """
+
+        for rec in self:
+            if rec.sale_order_id:
+                raise ValidationError(_("A Sale Order already exists for this record."))
+
+            if not rec.partner_id:
+                raise ValidationError(_("Please select a customer before creating a Sale Order."))
+
+            product_id = rec.property_id.product_id.id if rec.property_id and rec.property_id.product_id else False
+            if not product_id:
+                raise ValidationError(_("The property does not have a linked product for the Sale Order."))
+
+            sale_order = self.env['sale.order'].create({
+                'partner_id': rec.partner_id.id,
+                'property_sale_id': rec.id,
+                'project_id': rec.project_id.id if rec.project_id else False,
+                'order_line': [(0, 0, {
+                    'name': rec.name or "Property Sale",
+                    'product_id': product_id,
+                    'price_unit': rec.sale_price,
+                    'product_uom_qty': 1,
+                })]
+            })
+
+            rec.sale_order_id = sale_order.id
+
+            return {
+                'name': "Sale Order",
+                'type': 'ir.actions.act_window',
+                'res_model': 'sale.order',
+                'view_mode': 'form',
+                'res_id': sale_order.id,
+            }
+
+    def action_view_sale_order(self):
+        """Open the linked Sale Order"""
+        self.ensure_one()
+        if not self.sale_order_id:
+            return
+        return {
+            'name': 'Sale Order',
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'view_mode': 'form',
+            'res_id': self.sale_order_id.id,
+            'target': 'current',
+        }
+
+    def action_view_invoice(self):
+        """Open the linked Invoice"""
+        self.ensure_one()
+        if not self.invoice_id:
+            return
+        return {
+            'name': 'Invoice',
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'form',
+            'res_id': self.invoice_id.id,
+            'target': 'current',
+        }
+
+
+
+
+    def action_create_invoice(self):
+            for rec in self:
+                if rec.invoice_id:
+                    raise ValidationError(_("An invoice already exists for this sale record."))
+
+                if not rec.partner_id:
+                    raise ValidationError(_("Please select a customer before creating an invoice."))
+
+                invoice = self.env['account.move'].create({
+                    'move_type': 'out_invoice',
+                    'partner_id': rec.partner_id.id,
+                    'invoice_origin': rec.name,
+                    'invoice_line_ids': [(0, 0, {
+                        'name': rec.name or "Property Invoice",
+                        'price_unit': rec.sale_price,
+                        'quantity': 1,
+                    })],
+                })
+
+                rec.invoice_id = invoice.id
+
+                return {
+                    'name': "Invoice",
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'account.move',
+                    'view_mode': 'form',
+                    'res_id': invoice.id,
+                }
 
 class PropertySaleLine(models.Model):
     _name = "property.sale.line"

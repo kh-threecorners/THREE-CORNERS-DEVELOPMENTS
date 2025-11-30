@@ -181,13 +181,16 @@ class PropertySale(models.Model):
                 rec.discount = 0
 
     @api.model
-    def create(self, vals):
-        """Generate Reference for the sale order"""
-        if vals.get('name', _('New')) == _('New'):
-            vals['name'] = self.env['ir.sequence'].next_by_code(
-                'property.sale') or 'New'
-        res = super(PropertySale, self).create(vals)
-        return res
+    def create(self, vals_list):
+        records = []
+        for vals in vals_list:
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('property.sale') or 'New'
+
+            rec = super(PropertySale, self).create(vals)
+            records.append(rec)
+
+        return records[0] if len(records) == 1 else records
 
     @api.depends('commission_plan_id', 'sale_price')
     def _compute_commission_and_commission_type(self):
@@ -282,7 +285,7 @@ class PropertySale(models.Model):
     def action_propose(self):
         """Sets the state to 'proposed', post message in chatter, and create activity for Property Managers."""
         property_manager_group = self.env.ref('real_estate_management.group_property_manager')
-        manager_users = property_manager_group.users.sudo()
+        manager_users = property_manager_group.user_ids.sudo()
 
         for rec in self:
             rec.state = 'proposed'
