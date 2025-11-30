@@ -138,7 +138,7 @@ class PropertyProperty(models.Model):
             product = self.env['product.product'].create({
                 'name': record.name,
                 'list_price': record.unit_price,
-                'detailed_type': 'service',
+                'type': 'service',
                 'sale_ok': True,
                 'purchase_ok': False,
             })

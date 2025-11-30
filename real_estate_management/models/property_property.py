@@ -241,7 +241,7 @@ class Property(models.Model):
             product = self.env['product.product'].create({
                 'name': self.name,
                 'list_price': self.unit_price,
-                'detailed_type': 'service',  # Or 'consu' or 'product'
+                'type': 'service',  # Or 'consu' or 'product'
                 'sale_ok': True,  # Make sure it's salable
                 'purchase_ok': False,
             })
