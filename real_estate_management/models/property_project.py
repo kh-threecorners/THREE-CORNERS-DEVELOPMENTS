@@ -18,7 +18,7 @@ class PropertyProject(models.Model):
 
     name = fields.Char(string='Project Name', required=True,
                        help='The name of the project')
-    image = fields.Binary(string='Image', required=True,
+    image = fields.Binary(string='Image',
                           help='The Project image')
     description = fields.Text(string='Description',
                               help='The description of the project')
