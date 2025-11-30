@@ -55,7 +55,7 @@ class CrmLead(models.Model):
                         'name': lead.property_id.name,
                         'list_price': lead.property_id.unit_price,
                         'type': 'service',
-                        'detailed_type': 'service',
+                        # 'detailed_type': 'service',
                     })
 
                 ctx = action.get('context', {})

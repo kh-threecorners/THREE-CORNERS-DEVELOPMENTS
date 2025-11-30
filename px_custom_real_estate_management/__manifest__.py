@@ -11,7 +11,7 @@
         Real Estate Management System
     """,
     'depends': ['base', 'mail', 'sale_management', 'website',
-                'base_geolocalize', 'web', 'sale', 'board' , 'real_estate_management', 'px_custom_contact'],
+                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact' , 'real_estate_management', 'px_custom_contact'],
     'data': [
         'data/cron.xml',
         'security/ir.model.access.csv',

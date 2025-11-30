@@ -241,7 +241,8 @@ class Property(models.Model):
             product = self.env['product.product'].create({
                 'name': self.name,
                 'list_price': self.unit_price,
-                'type': 'service',  # Or 'consu' or 'product'
+                'type': 'service',
+                # 'detailed_type': 'service',  # Or 'consu' or 'product'
                 'sale_ok': True,  # Make sure it's salable
                 'purchase_ok': False,
             })
@@ -348,14 +349,29 @@ class Property(models.Model):
             else:
                 rec.meter_price = 0.0
 
+    # @api.model
+    # def create(self, vals):
+    #     """Generating sequence number at the time of creation of record"""
+    #     if vals.get("code", "New") == "New":
+    #         vals["code"] = (
+    #                 self.env["ir.sequence"].next_by_code("property.property") or "New"
+    #         )
+    #     res = super(Property, self).create(vals)
+    #     return res
     @api.model
-    def create(self, vals):
+    def create(self, vals_list):
         """Generating sequence number at the time of creation of record"""
-        if vals.get("code", "New") == "New":
-            vals["code"] = (
-                    self.env["ir.sequence"].next_by_code("property.property") or "New"
-            )
-        res = super(Property, self).create(vals)
+        # Odoo passes a list of vals, even for single record
+        if isinstance(vals_list, dict):
+            vals_list = [vals_list]
+
+        for vals in vals_list:
+            if vals.get("code", "New") == "New":
+                vals["code"] = (
+                        self.env["ir.sequence"].next_by_code("property.property") or "New"
+                )
+
+        res = super(Property, self).create(vals_list)
         return res
 
     def _compute_total_sq_feet(self):
