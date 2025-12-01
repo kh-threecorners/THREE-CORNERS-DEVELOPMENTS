@@ -29,33 +29,38 @@
                 <button name="action_create_sale_order"
                         type="object"
                         string="Create Sale Order"
-                        invisible="state != 'draft'"
+                        invisible="state != 'confirm'"
                         class="btn-primary"/>
 
-                <button name="action_create_invoice"
+<!--                <button name="action_create_invoice"-->
+<!--                        type="object"-->
+<!--                        string="Create Invoice"-->
+<!--                        invisible="state != 'confirm'"-->
+<!--                        class="btn-secondary"/>-->
+                <button name="action_create_downpayment"
                         type="object"
-                        string="Create Invoice"
-                        invisible="state != 'draft'"
+                        string="Create Down Payment"
+                        invisible="state != 'confirm'"
                         class="btn-secondary"/>
 
             </header>
-            <xpath expr="//sheet" position="inside">
-                <div name="oe_button_box">
-                    <button name="action_view_sale_order"
-                            type="object"
-                            string="Sale Order"
-                            class="oe_stat_button"
-                            icon="fa-shopping-cart"
-                            invisible="not sale_order_id"/>
+<!--            <xpath expr="//sheet" position="inside">-->
+<!--                <div name="oe_button_box">-->
+<!--                    <button name="action_view_sale_order"-->
+<!--                            type="object"-->
+<!--                            string="Sale Order"-->
+<!--                            class="oe_stat_button"-->
+<!--                            icon="fa-shopping-cart"-->
+<!--                            invisible="not sale_order_id"/>-->
 
-                    <button name="action_view_invoice"
-                            type="object"
-                            string="Invoice"
-                            class="oe_stat_button"
-                            icon="fa-file-invoice"
-                            invisible="not invoice_id"/>
-                </div>
-            </xpath>
+<!--                    <button name="action_view_invoice"-->
+<!--                            type="object"-->
+<!--                            string="Invoice"-->
+<!--                            class="oe_stat_button"-->
+<!--                            icon="fa-file-invoice"-->
+<!--                            invisible="not invoice_id"/>-->
+<!--                </div>-->
+<!--            </xpath>-->
             <xpath expr="//field[@name='property_id']" position="after">
                 <field name="reservation_duration_hours"/>
                 <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
