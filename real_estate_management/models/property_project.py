@@ -10,7 +10,6 @@
 
 from odoo import api, fields, models
 
-
 class PropertyProject(models.Model):
     _name = 'property.project'
     _description = 'Property Project'

@@ -20,7 +20,7 @@ class Property(models.Model):
     )
     code = fields.Char(
         string="Reference",
-        readonly=True,
+        readonly=False,
         copy=False,
         default=lambda self: _("New"),
         help="Sequence/code for the property",
