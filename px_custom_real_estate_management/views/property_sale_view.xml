@@ -1,0 +1,113 @@
+<odoo>
+    <record id="property_sale_view_form_inherit_reserve" model="ir.ui.view">
+        <field name="name">property.sale.view.form.reserve</field>
+        <field name="model">property.sale</field>
+        <field name="inherit_id" ref="real_estate_management.property_sale_view_form"/>
+        <field name="arch" type="xml">
+            <header position="inside">
+                <button name="action_temp_reserve_property"
+                        type="object"
+                        string="Hold"
+                        class="btn-primary"
+                        invisible="state not in ['draft','invisible']"
+                />
+                <button name="action_broker_commission_invoice"
+                        type="object"
+                        string="Broker Commission Invoice"
+                        class="btn-primary"
+                        invisible="not broker_id"/>
+
+                <button name="action_cancel" type="object" string="Cancel"
+                        class="btn-secondary"
+                        invisible="state not in ['proposed']"
+                        groups="real_estate_management.booking_sale_approval"/>
+                <button name="action_draft" type="object" string="Reset To Draft"
+                        class="btn-primary"
+                        invisible="state not in ['proposed']"
+                        groups="real_estate_management.booking_sale_approval"/>
+
+                <button name="action_create_sale_order"
+                        type="object"
+                        string="Create Sale Order"
+                        invisible="state != 'draft'"
+                        class="btn-primary"/>
+
+                <button name="action_create_invoice"
+                        type="object"
+                        string="Create Invoice"
+                        invisible="state != 'draft'"
+                        class="btn-secondary"/>
+
+            </header>
+            <xpath expr="//sheet" position="inside">
+                <div name="oe_button_box">
+                    <button name="action_view_sale_order"
+                            type="object"
+                            string="Sale Order"
+                            class="oe_stat_button"
+                            icon="fa-shopping-cart"
+                            invisible="not sale_order_id"/>
+
+                    <button name="action_view_invoice"
+                            type="object"
+                            string="Invoice"
+                            class="oe_stat_button"
+                            icon="fa-file-invoice"
+                            invisible="not invoice_id"/>
+                </div>
+            </xpath>
+            <xpath expr="//field[@name='property_id']" position="after">
+                <field name="reservation_duration_hours"/>
+                <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
+            </xpath>
+            <xpath expr="//field[@name='broker_id']" position="attributes">
+                <attribute name="domain">[('is_broker', '=', True)]</attribute>
+            </xpath>
+            <xpath expr="//field[@name='paid']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='remaining']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='payment_method']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='reservation_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='completion_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//group[field[@name='commission_plan_id']]" position="after">
+                <group string="Payment Details" colspan="2">
+                    <field name="paid"/>
+                    <field name="remaining"/>
+                    <field name="payment_method"/>
+                    <field name="reservation_date"/>
+                    <field name="completion_date"/>
+                </group>
+            </xpath>
+
+
+            <notebook position="inside">
+                <page string="Payment Plan">
+                    <group>
+                        <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
+                    </group>
+                    <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': id}">
+                        <!--                    <field name="property_sale_line_ids" readonly="1" context="{'default_sale_id': active_id}">-->
+                        <list create="false" edit="false" delete="false">
+                            <field name="serial_number"/>
+                            <field name="name"/>
+                            <field name="capital_repayment"/>
+                            <field name="remaining_capital"/>
+                            <field name="collection_status"/>
+                            <field name="collection_amount"/>
+                            <field name="collection_date"/>
+                        </list>
+                    </field>
+                </page>
+            </notebook>
+        </field>
+    </record>
+</odoo>

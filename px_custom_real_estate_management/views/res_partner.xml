@@ -1,0 +1,24 @@
+<odoo>
+    <record id="view_partner_form_inherit_broker" model="ir.ui.view">
+        <field name="name">res.partner.broker.field</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_developer']" position="after">
+                <field name="is_broker"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Commission Invoices">
+                    <field name="broker_commission_invoice_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="invoice_date"/>
+                            <field name="amount_total"/>
+                            <field name="state"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

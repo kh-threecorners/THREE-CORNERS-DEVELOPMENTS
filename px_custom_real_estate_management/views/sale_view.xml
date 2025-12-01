@@ -1,0 +1,56 @@
+<odoo>
+    <record id="view_order_form_inherit_installments" model="ir.ui.view">
+        <field name="name">sale.order.form.installments</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@class='oe_button_box']" position="inside">
+                <button name="action_view_installment_invoices"
+                        type="object"
+                        class="oe_stat_button"
+                        invisible="property_id"
+                        icon="fa-file-invoice-dollar">
+                    <field name="installment_count" widget="statinfo" string="Installment Invoices"/>
+                </button>
+                <button name="action_view_so_installment_invoices_so"
+                        type="object"
+                        class="oe_stat_button"
+                        invisible="not property_id"
+                        icon="fa-file-invoice-dollar">
+                    <field name="so_installment_invoice_count" widget="statinfo" string="Installment Invoices"/>
+                </button>
+            </xpath>
+            <header position="inside">
+                <button name="action_create_installment_invoices"
+                        string="Create Installment Invoices"
+                        type="object"
+                        class="btn-primary"
+                        invisible="installment_invoice_exist or state != 'sale' or property_id" />
+                <button name="action_create_installment_invoices_from_so"
+                    type="object"
+                    string="Create Installment Invoices"
+                    class="btn-primary"
+                    invisible="installment_invoice_exist or state != 'sale' or not property_id" />
+            </header>
+            <xpath expr="//field[@name='project_id']" position="after">
+                <field name="installment_invoice_exist" invisible="1"/>
+                <field name="property_id"/>
+                <field name="payment_id" domain="[('state', '=', 'published')]" invisible="not property_id"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Installments" invisible="not property_id">
+                    <field name="installment_line_ids">
+                        <list editable="bottom">
+                            <field name="sequence"/>
+                            <field name="name"/>
+                            <field name="capital_repayment"/>
+                            <field name="remaining_capital"/>
+                            <field name="collection_status"/>
+                            <field name="collection_date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

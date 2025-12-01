@@ -1,0 +1,130 @@
+<odoo>
+    <template id="report_property_sale_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+
+                    <!-- Define Arabic Font -->
+                    <style type="text/css">
+                        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap'  );
+                        .page, .page * {
+                            font-family: 'Cairo', sans-serif !important;
+                        }
+                        .compact-p p {
+                            margin: 2px 0;
+                        }
+                    </style>
+
+                    <div class="page" style="direction: rtl;">
+                        <!-- Header Section -->
+                        <div style="position: absolute; top: -40px; left: 50px;">
+                            <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 120px; max-width: 150px;" alt="Company Logo"/>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <div class="text-center" style="width:300px;background-color: #000000; color: #ffffff; padding: 5px; font-size: 20px; font-weight: bold; border-radius: 5px;text-align:center;margin-right:270px">
+                                استمارة حجز
+                            </div>
+                            <div style="font-size: 18px; font-weight: bold; margin-top: 5px;  padding-rigt: 20px;">
+                                <span t-field="o.name"/>
+                            </div>
+                        </div>
+                        <div class="row" style="padding: 4px 0; display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; font-size: 14px;  padding-right: 35px;">
+                            <div class="col-4" style="flex: 1; text-align: right; padding-right: 20px;">التاريخ: <span t-field="o.reservation_date" t-options="{&quot;format&quot;: &quot;dd-MM-yyyy&quot;}"/></div>
+                            <div class="col-4" style="flex: 1; text-align: center;">اليوم: <span t-field="o.day_of_week"/></div>
+                            <div class="col-4" style="flex: 1; text-align: left; padding-left: 15px;">كود العميل: <span t-field="o.contact_code"/></div>
+                        </div>
+
+                        <!-- Main Content Wrapper -->
+                        <div style="margin-right: 50px; text-align: right;">
+
+                            <!-- Contractor Data -->
+                            <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; margin-top: 10px; font-size: 16px; font-weight: bold;">بيانات المتعاقد</h3>
+                            <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
+                                <p><strong>السيد/ة:</strong> <span t-field="o.partner_id.name"/></p>
+                                <p><strong>الرقم القومي:</strong> <span t-field="o.id_number"/></p>
+                                <p><strong>عنوان الرسائل:</strong> <span t-field="o.partner_street"/> <span t-field="o.partner_street2"/>، <span t-field="o.partner_city"/>، <span t-field="o.partner_state_id"/>، <span t-field="o.partner_country_id"/></p>
+                                <p><strong>الوظيفة:</strong> <span t-field="o.partner_jop"/></p>
+                                <p><strong>الجنسية:</strong> <span t-field="o.partner_nationality"/></p>
+                                <p><strong> الهاتف:</strong> <span t-field="o.partner_phone"/></p>
+                                <p><strong> الموبايل:</strong> <span t-field="o.partner_mobile"/></p>
+                                <p><strong>الإيميل:</strong> <span t-field="o.partner_email"/></p>
+                            </div>
+
+                            <!-- Unit Data -->
+                            <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; margin-top: 10px; font-size: 16px; font-weight: bold;">بيانات الوحدة</h3>
+                            <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
+                                <p><strong>كود الوحدة:</strong> <span t-field="o.model_number"/></p>
+                                <p><strong>رقم الدور:</strong> <span t-field="o.floor_number"/></p>
+                                <p><strong>نوع الوحدة:</strong> <span t-field="o.property_type"/></p>
+                                <p><strong>نوع التشطيب:</strong> <span t-field="o.finishing_type"/></p>
+                                <p><strong>المساحة:</strong> <span t-field="o.unit_area"/></p>
+                                <p><strong>اسم المشروع:</strong> <span t-field="o.project_id"/></p>
+                            </div>
+
+                            <!-- Financial Details -->
+                            <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; margin-top: 10px; font-size: 16px; font-weight: bold;">التفاصيل المالية</h3>
+                            <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
+                                <p><strong>طريقة الدفع:</strong> <span t-field="o.payment_method"/></p>
+                                <p><strong>القيمة الاجمالية للوحدة:</strong> <span t-field="o.sale_price"/></p>
+                                <p><strong>الخصم:</strong> <span t-field="o.discount"/>%</p>
+                                <p><strong>السعر بعد الخصم:</strong> <span t-field="o.price_after_discount"/></p>
+                                <p><strong>القيمة المسددة من المقدم:</strong> <span t-field="o.paid"/></p>
+                                <p><strong>المبلغ المتبقي:</strong> <span t-field="o.remaining"/></p>
+                                <p><strong>تاريخ الحجز:</strong> <span t-field="o.reservation_date" t-options="{&quot;format&quot;: &quot;dd-MM-yyyy&quot;}"/></p>
+                                <p><strong>تاريخ إتمام التعاقد:</strong> <span t-field="o.completion_date" t-options="{&quot;format&quot;: &quot;dd-MM-yyyy&quot;}"/></p>
+                                <p><strong>ملاحظات:</strong> <span t-field="o.note"/></p>
+                                </div>
+                                <div style="padding: 5px 0; margin-top: 5px;">
+                                    <p style="color: red; font-weight: bold; text-align: right; line-height: 1.4; font-size: 12px;">
+                                            يتم سداد المبلغ المتبقي للوحدة علي اقساط طبقا لجدول السداد المتفق عليه والمرفق بهذه الأستمارة بالإضافة الي مبلغ وديعة الصيانة من تاريخ استكمال المقدم
+                                    </p>
+                                </div>
+
+                                    <!-- Booking Conditions - Corrected Layout -->
+                                <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; font-size: 16px; font-weight: bold;">شروط الحجز</h3>
+                                <div style="padding: 5px 0px; text-align: right; font-size: 13px; line-height: 1.6;">
+
+                                    <p style="margin: 5px 0;">
+                                        <strong>ملحوظة 1:</strong> اتعهد أنا المتعاقد علي الوحدة المذكورة بإتمام التعاقد في التاريخ المحدد للتعاقد وإلا تم إلغاء الحجز نظير للضرر الذي وقع عن تأخري في إتمام التعاقد.
+                                    </p>
+
+                                    <p style="margin: 5px 0;">
+                                        <strong>ملحوظة 2:</strong> في حال طلب استرداد قيمة الحجز يتم عن طريق التوجه لفرع من فروع الشركة وذلك بعد تقديم الطلب ب 48 ساعة.
+                                    </p>
+
+                                    <p style="margin: 5px 0;">
+                                        <strong>ملحوظة 3:</strong> يسقط الحجز عن الوحدة المتفق عليها بحد اقصي عشرة ايام من تاريخ الحجز.
+                                    </p>
+
+                                </div>
+
+                            <!-- Client Source -->
+                            <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; font-size: 16px; font-weight: bold;">مصدر العميل</h3>
+                            <div class="row">
+                            <div class="col-4" style="text-align: center;">
+                                    <p><strong>مسؤول مبيعات الشركة:</strong> <span t-field="o.sales_person"/></p>
+                                </div>
+                                <div class="col-4" style="text-align: left; padding-left: 90px;">
+                                    <p><strong>مدير المبيعات:</strong> <span t-field="o.sales_manager"/></p>
+                                </div>
+                                <div class="col-4" style="text-align: right; padding-right: 45px;">
+                                    <p><strong>مصدر العميل:</strong> <span t-field="o.broker_id"/></p>
+                            </div>
+                                </div>
+                            <div style="margin-top: 20px;">
+
+                                 <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; font-size: 16px; font-weight: bold;">التوقيعات</h3>
+                            <div class="row" style="display: flex; justify-content: space-around; text-align: center; padding: 10px 0; font-weight: bold; font-size: 14px; padding-right: 165px;">
+                                <div class="col-4" style="width: 25%; padding-right: 40px;"><p>إدارة الحسابات</p><p style="margin-top: 25px; padding-right: 40x;">.........................</p></div>
+                                <div class="col-4" style="width: 25%;"><p>مدير المبيعات</p><p style="margin-top: 25px;">.........................</p></div>
+                                <div class="col-4" style="width: 25%;"><p>توقيع العميل</p><p style="margin-top: 25px;">.........................</p></div>
+                            </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="property_project_view_form" model="ir.ui.view">
+        <field name="name">property.project.view.form</field>
+        <field name="model">property.project</field>
+
+        <field name="arch" type="xml">
+            <form string="Property Project">
+                <sheet>
+                    <field class="oe_avatar" name="image" widget="image"/>
+
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="developer_id" domain="[('is_developer', '=', True)]"/>
+                        </group>
+                        <group>
+                            <field name="description"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page name="properties" string="Properties">
+                            <field name="property_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="property_type"/>
+                                    <field name="total_floor"/>
+                                    <field name="bedroom"/>
+                                    <field name="bathroom"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="property_project_view_tree" model="ir.ui.view">
+        <field name="name">property.project.view.tree</field>
+        <field name="model">property.project</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="developer_id"/>
+            </list>
+        </field>
+    </record>
+
+
+    <record id="property_project_action" model="ir.actions.act_window">
+        <field name="name">Property Projects</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">property.project</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create Your First Projects !
+            </p>
+        </field>
+    </record>
+
+
+    <menuitem id="property_project_menu" name="Projects" parent="property_root_menu"
+              action="property_project_action" sequence="2"/>
+</odoo>

@@ -1,0 +1,64 @@
+<odoo>
+    <record id="view_crm_lead_tree_inherit_import" model="ir.ui.view">
+        <field name="name">crm.lead.tree.inherit.import</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="import_file_name" optional="show"/>
+                <field name="import_date" optional="show"/>
+                <field name="last_stage_id" optional="show"/>
+                <field name="last_user_id" optional="show"/>
+                <field name="all_log_notes_text" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+     <record id="view_crm_lead_form_inherit_duplicate_after_tags" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.duplicate.after.tags</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="last_stage_id"/>
+                <field name="last_user_id" invisible="1"/>
+                <field name="all_log_notes_text" invisible="1"/>
+
+
+            </xpath>
+        </field>
+    </record>
+
+<!--    <record id="crm_lead_search_opportunities_inherit_property" model="ir.ui.view">-->
+<!--        <field name="name">crm.lead.search.opportunity.inherit.property</field>-->
+<!--        <field name="model">crm.lead</field>-->
+<!--        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//search" position="inside">-->
+<!--                <field name="property_id" string="Property"/>-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
+
+<!--    <record id="crm_lead_tree_inherit_property" model="ir.ui.view">-->
+<!--        <field name="name">crm.lead.tree.inherit.property</field>-->
+<!--        <field name="model">crm.lead</field>-->
+<!--        <field name="inherit_id" ref="crm.crm_case_tree_view_leads"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//list" position="inside">-->
+<!--                <field name="property_id" string="Property" optional="show"/>-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- Kanban View Inherit -->
+<!--    <record id="crm_lead_kanban_inherit_property" model="ir.ui.view">-->
+<!--        <field name="name">crm.lead.kanban.inherit.property</field>-->
+<!--        <field name="model">crm.lead</field>-->
+<!--        <field name="inherit_id" ref="crm.view_crm_lead_kanban"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//t[@t-name='card']" position="inside">-->
+<!--                <field name="property_id"/>-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
+</odoo>

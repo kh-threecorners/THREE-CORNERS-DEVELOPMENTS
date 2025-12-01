@@ -1,0 +1,23 @@
+<!--##############################################################################-->
+<!--#    Copyright (C) 2023.-->
+<!--#    Author: Eng.Mohamed Reda Mahfouz (<mohamed.reda741@gmail.com>)-->
+<!--#-->
+<!--#-->
+<!--#    It is forbidden to publish, distribute, sublicense, or sell copies-->
+<!--#    of the Software or modified copies of the Software.-->
+<!--##############################################################################-->
+<odoo>
+    <data>
+        <record id="view_crm_stage_form_inherit_branch" model="ir.ui.view">
+            <field name="name">crm.lead.form.aqar</field>
+            <field name="model">crm.stage</field>
+            <field name="inherit_id" ref="crm.crm_stage_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='team_ids']" position="after">
+                    <field name="color_hex" widget="color"/>
+
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

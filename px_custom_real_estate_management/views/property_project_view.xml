@@ -1,0 +1,13 @@
+<odoo>
+    <record id="view_property_project_form_inherit" model="ir.ui.view">
+        <field name="name">property.project.form.inherit.file</field>
+        <field name="model">property.project</field>
+        <field name="inherit_id" ref="real_estate_management.property_project_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='description']" position="after">
+                    <field name="file_attachment" filename="file_name"/>
+                    <field name="file_name" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,42 @@
+<odoo>
+    <record id="view_crm_lead_form_inherit_duplicate_after_tags" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.duplicate.after.tags</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='tag_ids']" position="after">
+                <field name="payment_id" domain="[('state', '=', 'published')]"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Installments">
+                    <field name="installment_ids" nolabel="1" readonly="1">
+                        <list>
+                            <field name="serial_number"/>
+                            <field name="name"/>
+                            <field name="capital_repayment"/>
+                            <field name="remaining_capital"/>
+                            <field name="collection_status"/>
+                            <field name="collection_amount"/>
+                            <field name="collection_date"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_crm_lead_form_aqar_inherit_branch" model="ir.ui.view">
+        <field name="name">crm.lead.form.aqar</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_other_opportunities"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-users">
+                    <field name="other_opportunity_count" widget="statinfo"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+</odoo>

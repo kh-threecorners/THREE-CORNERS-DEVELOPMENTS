@@ -1,0 +1,70 @@
+<odoo>
+    <template id="report_property_sale_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div style="position: absolute; top: 0px; left: 50px;">
+                            <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="max-height: 80px; max-width: 150px;" alt="Company Logo"/>
+                        </div>
+                    <div class="page" style="margin-right: 50px; direction: rtl; text-align: right; font-family: 'Arial';">
+                        <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 8px; margin-top: 20px; font-size: 18px; font-weight: bold;">بيانات المتعاقد</h3>
+                        <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
+                            <div style="width: 50%; padding-left: 15px; padding-right: 45px; box-sizing: border-box; text-align: right; ">
+                                <p><strong>السيد/ة:</strong> <span t-field="o.partner_id.name"/></p>
+                                <p><strong>الرقم القومي:</strong> <span t-field="o.id_number"/></p>
+                                <p><strong>عنوان الرسائل:</strong> <span t-field="o.partner_street"/> <span t-field="o.partner_street2"/>، <span t-field="o.partner_city"/>، <span t-field="o.partner_state_id.name"/>، <span t-field="o.partner_country_id.name"/></p>
+                                <p><strong>رقم الهاتف:</strong> <span t-field="o.partner_phone"/></p>
+                                <p><strong>رقم الموبايل:</strong> <span t-field="o.partner_mobile"/></p>
+                                <p><strong>الإيميل:</strong> <span t-field="o.partner_email"/></p>
+                            </div>
+                        </div>
+                        <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 8px; margin-top: 20px; font-size: 18px; font-weight: bold;">بيانات الوحدة</h3>
+                        <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
+                            <div style="width: 50%; padding-left: 15px; padding-right: 45px; box-sizing: border-box;">
+                                <p><strong>اسم الوحدة:</strong> <span t-field="o.property_id.name"/></p>
+                                <p><strong>رقم الوحدة:</strong> <span t-field="o.model_number"/></p>
+                                <p><strong>رقم الدور:</strong> <span t-field="o.floor_number"/></p>
+                                <p><strong>المساحة:</strong> <span t-field="o.unit_area"/></p>
+                            </div>
+                            <div style="width: 50%; padding-left: 15px; padding-right: 75px; box-sizing: border-box;">
+                                <p><strong>سعر الوحدة:</strong> <span t-field="o.sale_price" widget="monetary" options="{'currency_field': 'currency_id'}"/></p>
+                                <p><strong>الخصم:</strong> <span t-field="o.discount"/>%</p>
+                                <p><strong>السعر بعد الخصم:</strong> <span t-field="o.price_after_discount" widget="monetary" options="{'currency_field': 'currency_id'}"/></p>
+                            </div>
+                        </div>
+
+                        <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 8px; margin-top: 20px; font-size: 18px; font-weight: bold;">بيانات الحجز</h3>
+                        <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
+                            <div style="width: 50%; padding-left: 15px; padding-right: 45px; box-sizing: border-box;">
+                                <p><strong>تاريخ الحجز:</strong> <span t-field="o.reservation_date"/></p>
+                                <p><strong>تاريخ إتمام التعاقد:</strong> <span t-field="o.completion_date"/></p>
+                            </div>
+                            <div style="width: 50%; padding-left: 15px; padding-right: 75px; box-sizing: border-box;">
+                                <p><strong>طريقة الدفع:</strong> <span t-field="o.payment_method"/></p>
+                                <p><strong>المبلغ المدفوع:</strong> <span t-field="o.paid" widget="monetary" options="{'currency_field': 'currency_id'}"/></p>
+                                <p><strong>المبلغ المتبقي:</strong> <span t-field="o.remaining" widget="monetary" options="{'currency_field': 'currency_id'}"/></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; font-size: 14px; direction: rtl; border-top: 1px solid #dee2e6; padding-top: 10px; margin-top: 50px;">
+                        <p style="margin-bottom: 20px;"> أتعهد أنا المتعاقد على الوحدة المذكورة بإتمام التعاقد في التاريخ المحدد للتعاقد وإلا تم إلغاء الحجز </p>
+                        <div style="display: flex; justify-content: space-around; margin-top: 30px;">
+                            <div style="width: 45%; text-align: center;">
+                                <p><strong>المتعاقد:</strong></p>
+                                <p>الاسم: ....................................</p>
+                                <p>التوقيع: ....................................</p>
+                            </div>
+                            <div style="width: 45%; text-align: center;">
+                                <p><strong>مسؤول المبيعات:</strong></p>
+                                <p>الاسم: ....................................</p>
+                                <p>التوقيع: ....................................</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
+

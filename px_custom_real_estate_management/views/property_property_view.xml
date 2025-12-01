@@ -1,0 +1,107 @@
+<odoo>
+    <!-- Inherit Form View to Modify it -->
+    <record id="property_property_inherit_view_form" model="ir.ui.view">
+        <field name="name">property.property.inherit.view.form</field>
+        <field name="model">property.property</field>
+        <field name="inherit_id" ref="real_estate_management.property_property_view_form"/>
+        <field name="arch" type="xml">
+            <field name="state" position="attributes">
+                <attribute name="statusbar_visible">
+                    draft,available,rented,sold,under_maintenance,under_construction,booked,hold
+                </attribute>
+            </field>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    name="action_view_sale_orders"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-shopping-cart">
+                    <field name="sale_order_count" widget="statinfo" string="Sale Orders"/>
+                </button>
+            </xpath>
+            <xpath expr="//header" position="inside">
+                <button name="action_temp_reserve_sold"
+                        string="Hold"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'"/>
+                <button name="action_reset_to_draft"
+                        string="Reset To Draft"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state == 'draft'"/>
+                <button name="action_set_under_maintenance"
+                        type="object"
+                        string="Set Under Maintenance"
+                        class="btn-secondary"
+                        invisible="state != 'draft'"/>
+                <button name="action_set_under_construction"
+                        type="object"
+                        string="Set Under Construction"
+                        class="btn-secondary"
+                        invisible="state != 'draft'"/>
+            </xpath>
+            <xpath expr="//field[@name='property_tags']" position="after">
+                <field name="reservation_duration_hours"/>
+                <field name="temp_reserved_until"/>
+                <field name="selected_payment_plan_id" domain="[('state', '=', 'published')]"/>
+                <field name="maintenance" widget="percentage"/>
+                <field name="maintenance_value"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Installments">
+                    <field name="installment_line_ids" readonly="1">
+                        <list create="false" edit="false" delete="false">
+                            <field name="sequence"/>
+                            <field name="due_date"/>
+                            <field name="name"/>
+                            <field name="type" readonly="1"/>
+                            <field name="amount"/>
+                        </list>
+                    </field>
+                </page>
+                <!--                <page string="Maintenance">-->
+                <!--                    <field name="maintenance_ids" widget="many2many_tree">-->
+                <!--                        <list>-->
+                <!--                            <field name="name"/>-->
+                <!--                        </list>-->
+                <!--                    </field>-->
+                <!--                </page>-->
+
+            </xpath>
+        </field>
+    </record>
+    <record id="property_property_view_search_inherit" model="ir.ui.view">
+        <field name="name">property.property.view.search.inherit</field>
+        <field name="model">property.property</field>
+        <field name="inherit_id" ref="real_estate_management.property_property_view_search"/>
+
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <field name="sale_rent" string="Sale/Rent"/>
+<!--                <group string="Group By Sale Rent">-->
+<!--                    <filter context="{'group_by':'sale_rent'}" name="sale_rent" string="Sale/Rent"/>-->
+<!--                </group>-->
+            </xpath>
+            <xpath expr="//searchpanel" position="inside">
+                <field name="sale_rent" string="Sale/Rent"/>
+            </xpath>
+        </field>
+    </record>
+    <menuitem action="real_estate_management.property_action" id="real_estate_management.property_property_menu" name="Inventory"
+              parent="real_estate_management.property_menu"
+              sequence="4"/>
+        <record id="real_estate_management.property_action" model="ir.actions.act_window">
+        <field name="name">Inventory</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">property.property</field>
+        <field name="view_mode">kanban,list,form,activity</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create Your First Property!
+            </p>
+        </field>
+    </record>
+
+</odoo>
