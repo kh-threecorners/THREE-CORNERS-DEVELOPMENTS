@@ -260,6 +260,32 @@ class PropertySale(models.Model):
                     'res_id': invoice.id,
                 }
 
+    def action_create_downpayment(self):
+        for rec in self:
+            if not rec.partner_id:
+                raise ValidationError(_("Please select a customer before creating a payment."))
+
+            if rec.paid <= 0:
+                raise ValidationError(_("The 'Paid' amount must be greater than zero."))
+
+            payment = self.env['account.payment'].create({
+                'payment_type': 'inbound',
+                'partner_type': 'customer',
+                'partner_id': rec.partner_id.id,
+                'amount': rec.paid,
+                'payment_method_id': self.env.ref('account.account_payment_method_manual_in').id,
+                'journal_id': self.env['account.journal'].search([('type', '=', 'bank')], limit=1).id,
+            })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': "Payments",
+            'res_model': 'account.payment',
+            'view_mode': 'form',
+            'res_id': payment.id,
+        }
+
+
 class PropertySaleLine(models.Model):
     _name = "property.sale.line"
     _description = "Property Sale Line"
