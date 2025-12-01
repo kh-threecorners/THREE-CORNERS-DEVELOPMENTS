@@ -212,8 +212,8 @@ class Property(models.Model):
     no_of_installments = fields.Integer(string="Number of Installments", compute='_compute_installments', store=True)
     amount_per_installment = fields.Float(string="Amount Per Installment", compute='_compute_installments', store=True)
     property_project_id = fields.Many2one('property.project', string='Project', help='The project of the property')
-    developer_id = fields.Many2one('res.partner', string='Developer', related='property_project_id.developer_id',
-                                   store=True)
+    # developer_id = fields.Many2one('res.partner', string='Developer', related='property_project_id.developer_id',
+    #                                store=True)
     meter_price = fields.Float(
         string="Meter Price",
         help="Price per square meter of the property",
