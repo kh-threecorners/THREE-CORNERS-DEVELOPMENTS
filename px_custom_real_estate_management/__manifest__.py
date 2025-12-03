@@ -10,7 +10,7 @@
     'description': """
         Real Estate Management System
     """,
-    'depends': ['base', 'mail', 'sale_management', 'website',
+    'depends': ['base', 'mail', 'sale_management', 'website','product',
                 'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact' , 'real_estate_management', 'px_custom_contact'],
     'data': [
         'data/cron.xml',
@@ -26,6 +26,7 @@
         'views/property_rental_view.xml',
         'views/res_partner.xml',
         'views/installments.xml',
+        # 'views/product_product.xml',
         # 'views/maintenance.xml',
         'reports/property_rental_report.xml',
 

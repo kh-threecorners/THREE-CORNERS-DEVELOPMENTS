@@ -116,34 +116,26 @@ class PropertyProperty(models.Model):
     def action_set_under_construction(self):
         self.write({'state': 'under_construction'})
 
-    # def create(self, vals):
-    #     record = super(PropertyProperty, self).create(vals)
-    #
-    #     if record.unit_price:
-    #         product = self.env['product.product'].create({
-    #             'name': record.name,
-    #             'list_price': record.unit_price,
-    #             'detailed_type': 'service',
-    #             'sale_ok': True,
-    #             'purchase_ok': False,
-    #         })
-    #         record.product_id = product.id
-    #
-    #     return record
-
     def create(self, vals):
         record = super(PropertyProperty, self).create(vals)
 
-        if record.unit_price:
-            product = self.env['product.product'].create({
-                'name': record.name,
-                'list_price': record.unit_price,
-                # 'detailed_type': 'service',
-                'type': 'service',
-                'sale_ok': True,
-                'purchase_ok': False,
-            })
-            record.product_id = product.id
+        price = record.unit_price if record.unit_price else 0.0
+        product_vals = {
+            'name': record.name,
+            'list_price': price,
+            'type': 'service',
+            'sale_ok': True,
+            'purchase_ok': False,
+        }
+
+        product = self.env['product.product'].create(product_vals)
+
+        if product.product_tmpl_id:
+            product.product_tmpl_id.property_account_income_id = 1388
+        else:
+            print("⚠ No product_tmpl_id found! Cannot set property_account_income_id.")
+
+        record.product_id = product.id
 
         if record.selected_payment_plan_id:
             record._onchange_selected_payment_plan_id()
@@ -155,6 +147,27 @@ class PropertyProperty(models.Model):
         if 'selected_payment_plan_id' in vals or 'unit_price' in vals or 'maintenance' in vals:
             self._onchange_selected_payment_plan_id()
         return res
+
+    @api.model
+    def _cron_create_missing_products(self):
+        properties = self.search([('product_id', '=', False)])
+        for prop in properties:
+            price = prop.unit_price or 0.0
+
+            product_vals = {
+                'name': prop.name or 'Unnamed Property',
+                'list_price': price,
+                'type': 'service',
+                'sale_ok': True,
+                'purchase_ok': False,
+            }
+
+            product = self.env['product.product'].create(product_vals)
+
+            if product.product_tmpl_id:
+                product.product_tmpl_id.property_account_income_id = 1388
+
+            prop.product_id = product.id
 
 
     def action_temp_reserve_sold(self):
@@ -223,7 +236,6 @@ class PropertyProperty(models.Model):
                 lines = []
                 current_date = plan.payment_start_date
 
-                # Down payment
                 if down_payment > 0:
                     lines.append((0, 0, {
                         'sequence': 0,
@@ -239,7 +251,6 @@ class PropertyProperty(models.Model):
                     'semi_annually': 6,
                 }.get(plan.payment_frequency, 1)
 
-                # Periodic installments
                 for i in range(1, no_of_installments + 1):
                     current_date += relativedelta(months=interval_months)
                     lines.append((0, 0, {
@@ -250,7 +261,6 @@ class PropertyProperty(models.Model):
                         'type': 'periodic',
                     }))
 
-                # Annual installments
                 if plan.annual_payment_percentage > 0:
                     for i in range(1, plan.payment_duration + 1):
                         lines.append((0, 0, {
@@ -261,87 +271,18 @@ class PropertyProperty(models.Model):
                             'type': 'annual',
                         }))
 
-                # Add Maintenance as last installment
                 if rec.maintenance_value and rec.maintenance_value > 0:
                     last_seq = lines[-1][2]['sequence'] if lines else 0
                     last_date = lines[-1][2]['due_date'] if lines else plan.payment_start_date
                     lines.append((0, 0, {
                         'sequence': last_seq + 1,
                         'name': "Maintenance",
-                        'due_date': last_date + relativedelta(days=1),  # يوم بعد آخر قسط
+                        'due_date': last_date + relativedelta(days=1),
                         'amount': rec.maintenance_value,
                         'type': 'maintenance',
                     }))
 
                 rec.installment_line_ids = lines
-
-    # @api.onchange('selected_payment_plan_id')
-    # def _onchange_selected_payment_plan_id(self):
-    #     for rec in self:
-    #         rec.installment_line_ids = [(5, 0, 0)]
-    #         if rec.selected_payment_plan_id:
-    #             plan = rec.selected_payment_plan_id
-    #
-    #             discount_amount = rec.unit_price * (plan.discount / 100.0)
-    #             price_after_discount = rec.unit_price - discount_amount
-    #
-    #             down_payment = price_after_discount * (plan.down_payment_percentage / 100.0)
-    #
-    #             remaining_after_down = price_after_discount - down_payment
-    #
-    #             annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
-    #
-    #             amount_to_be_installed = remaining_after_down - (annual_amount * plan.payment_duration)
-    #
-    #             multiplier = {
-    #                 'monthly': 12,
-    #                 'quarterly': 4,
-    #                 'semi_annually': 2,
-    #             }.get(plan.payment_frequency, 0)
-    #
-    #             no_of_installments = plan.payment_duration * multiplier
-    #             amount_per_installment = amount_to_be_installed / no_of_installments if no_of_installments else 0.0
-    #
-    #             lines = []
-    #             current_date = plan.payment_start_date
-    #
-    #             if down_payment > 0:
-    #                 lines.append((0, 0, {
-    #                     'sequence': 0,
-    #                     'name': "Down Payment",
-    #                     'due_date': plan.payment_start_date,
-    #                     'amount': down_payment,
-    #                     'type': 'down',
-    #                 }))
-    #
-    #             interval_months = {
-    #                 'monthly': 1,
-    #                 'quarterly': 3,
-    #                 'semi_annually': 6,
-    #             }.get(plan.payment_frequency, 1)
-    #
-    #             for i in range(1, no_of_installments + 1):
-    #                 current_date += relativedelta(months=interval_months)
-    #                 lines.append((0, 0, {
-    #                     'sequence': i,
-    #                     'name': f"Periodic Installment {i}",
-    #                     'due_date': current_date,
-    #                     'amount': amount_per_installment,
-    #                     'type': 'periodic',
-    #                 }))
-    #
-    #             if plan.annual_payment_percentage > 0:
-    #                 for i in range(1, plan.payment_duration + 1):
-    #                     lines.append((0, 0, {
-    #                         'sequence': no_of_installments + i,
-    #                         'name': f"Annual Installment {i}",
-    #                         'due_date': plan.payment_start_date + relativedelta(years=i),
-    #                         'amount': annual_amount,
-    #                         'type': 'annual',
-    #                     }))
-    #
-    #             rec.installment_line_ids = lines
-
 
 class PaymentInstallmentLine(models.Model):
     _name = 'payment.installment.line'
@@ -355,3 +296,5 @@ class PaymentInstallmentLine(models.Model):
     due_date = fields.Date(string="Due Date")
     amount = fields.Float(string="Amount")
     type = fields.Selection([('annual', 'Annual'), ('periodic', 'Periodic'),('maintenance', 'Maintenance'), ('down', 'Down Payment')], string="Type")
+
+

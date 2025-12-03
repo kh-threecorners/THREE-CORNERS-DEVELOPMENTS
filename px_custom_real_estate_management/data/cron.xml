@@ -10,5 +10,16 @@
 <!--            <field name="numbercall">-1</field>-->
             <field name="active">True</field>
         </record>
+
+         <record id="ir_cron_create_property_products" model="ir.cron">
+            <field name="name">Create Product for Properties Missing Product</field>
+            <field name="model_id" ref="model_property_property"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_create_missing_products()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+<!--            <field name="numbercall">-1</field>-->
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>

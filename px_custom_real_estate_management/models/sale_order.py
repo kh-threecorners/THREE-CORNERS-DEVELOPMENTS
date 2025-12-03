@@ -61,12 +61,16 @@ class SaleOrder(models.Model):
     def _onchange_payment_plan(self):
         for order in self:
             order.installment_line_ids = [(5, 0, 0)]
-            if not order.property_id or not order.payment_id:
+            if not order.payment_id:
                 continue
 
             plan = order.payment_id
-            unit_price = order.property_id.unit_price or 0.0
-            discounted_price = unit_price - (unit_price * (plan.discount / 100.0))
+            total_amount = sum(line.price_subtotal for line in order.order_line)
+
+            if not total_amount:
+                continue
+
+            discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
             down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
             remaining_after_down = discounted_price - down_payment
             annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
@@ -80,6 +84,8 @@ class SaleOrder(models.Model):
             seq = 1
             current_date = plan.payment_start_date
 
+            uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
+
             if down_payment > 0:
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -88,6 +94,7 @@ class SaleOrder(models.Model):
                     'remaining_capital': remaining_after_down,
                     'collection_status': 'not_due',
                     'collection_date': plan.payment_start_date,
+                    'uom_id': uom_id,
                 }))
                 seq += 1
 
@@ -101,6 +108,7 @@ class SaleOrder(models.Model):
                     'remaining_capital': remaining_after_down - (i * amount_per_installment),
                     'collection_status': 'not_due',
                     'collection_date': current_date,
+                    'uom_id': uom_id,
                 }))
                 seq += 1
 
@@ -112,8 +120,11 @@ class SaleOrder(models.Model):
                     'remaining_capital': remaining_after_down - (i * annual_amount),
                     'collection_status': 'not_due',
                     'collection_date': plan.payment_start_date + relativedelta(years=i),
+                    'uom_id': uom_id,
                 }))
                 seq += 1
+            print("💡 Maintenance value:", order.property_id.maintenance_value)
+            print("💡 Last installment date:", lines[-1][2]['collection_date'] if lines else plan.payment_start_date)
 
             maintenance_value = order.property_id.maintenance_value or 0.0
             if maintenance_value > 0:
@@ -125,11 +136,17 @@ class SaleOrder(models.Model):
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
                     'collection_date': last_date + relativedelta(days=1),
+                    'uom_id': uom_id,
                 }))
 
+            print("📝 Generated Installment Lines for Order:", order.name)
+            for l in lines:
+                print("   ➤ Seq:", l[2]['sequence'],
+                      "Name:", l[2]['name'],
+                      "Amount:", l[2]['capital_repayment'],
+                      "Date:", l[2]['collection_date'])
+
             order.installment_line_ids = lines
-
-
 
     @api.onchange('property_id')
     def _onchange_property_add_product(self):
@@ -151,18 +168,40 @@ class SaleOrder(models.Model):
 
 
     def action_create_installment_invoices_from_so(self):
-        invoices = self.env['account.move']
+        AccountMove = self.env['account.move']
+        created_invoices = AccountMove
+
+        print("🚀 Starting installment invoice creation for", len(self), "orders")
+
         for order in self:
-            if order.installment_invoice_exist:
+            print("➡️ Processing Order:", order.name, "(ID:", order.id, ")")
+
+            if not any(line.collection_status != 'collected' for line in order.installment_line_ids):
+                print("⚠️ Skipping:", order.name, "- all installments are already collected")
                 continue
 
+            order_invoices = AccountMove
+
             for line in order.installment_line_ids:
+                print("🔹 Processing line for invoice:", line.name,
+                      "| Amount:", line.capital_repayment,
+                      "| Status:", line.collection_status)
+
+                print("🔸 Checking line:", line.name, "| Status:", line.collection_status, "| Amount:",
+                      line.capital_repayment)
+
                 if line.collection_status == 'collected':
+                    print("⏭️ Skipping line:", line.name, "- already collected")
                     continue
 
                 invoice_vals = order._prepare_invoice()
+                if not invoice_vals:
+                    print("❌ _prepare_invoice() returned None for order:", order.name)
+                    continue
+
                 invoice_vals.update({
-                    'invoice_date': line.collection_date,
+                    'move_type': 'out_invoice',
+                    'invoice_date': line.collection_date or fields.Date.today(),
                     'sale_order_id': order.id,
                     'sale_order_installment_id': line.id,
                     'invoice_line_ids': [(0, 0, {
@@ -170,13 +209,36 @@ class SaleOrder(models.Model):
                         'quantity': 1,
                         'price_unit': line.capital_repayment,
                         'name': line.name,
+                        'product_uom_id': getattr(line, 'uom_id', False) and line.uom_id.id or False,
                     })],
                 })
 
-                invoices |= self.env['account.move'].create(invoice_vals)
+                print("🧾 Creating invoice for order:", order.name)
+                print("   ➤ Values:", invoice_vals)
 
-            order.installment_invoice_created = True
-        return invoices
+                invoice = AccountMove.create(invoice_vals)
+                order_invoices |= invoice
+
+                print("✅ Created Invoice ID:", invoice.id, "for Order:", order.name)
+
+            if order_invoices:
+                order.installment_invoice_created = True
+                created_invoices |= order_invoices
+                print("💾 Marked Order:", order.name, "as having created installment invoices")
+
+        print("🎯 Total invoices created:", len(created_invoices))
+
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': 'SO Installment Invoices',
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', created_invoices.ids)],
+        }
+
+        print("📤 Returning action:", action)
+        return action
+
 
     def action_create_installment_invoices(self):
         invoices = self.env['account.move']
@@ -212,7 +274,7 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Installment Invoices',
             'res_model': 'account.move',
-            'view_mode': 'list,form',
+            'view_mode': 'tree,form',
             'domain': [('sale_order_id', '=', self.id), ('installment_id', '!=', False)],
             'context': {'create': False},
         }
@@ -224,7 +286,7 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'SO Installment Invoices',
             'res_model': 'account.move',
-            'view_mode': 'list,form',
+            'view_mode': 'tree,form',
             'domain': [('sale_order_installment_id.sale_order_id', '=', self.id)],
             'context': {'create': False},
         }
@@ -245,6 +307,7 @@ class SaleOrderInstallmentLine(models.Model):
         ('pending', 'Pending')
     ], string="Collection Status", default='not_due')
     collection_date = fields.Date(string="Collection Date")
+    uom_id = fields.Many2one('uom.uom', string="Unit of Measure")
 
 
 class ProductProduct(models.Model):

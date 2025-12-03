@@ -8,3 +8,4 @@ from . import property_project
 from . import property_rental
 from . import res_partner
 from . import maintenance
+from . import product_product

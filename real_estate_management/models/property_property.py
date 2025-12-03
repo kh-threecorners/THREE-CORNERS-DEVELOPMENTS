@@ -25,6 +25,10 @@ class Property(models.Model):
         default=lambda self: _("New"),
         help="Sequence/code for the property",
     )
+    # ref = fields.Char(
+    #     string="Reference",
+    #     copy=False,
+    # )
     developer_id = fields.Many2one(
         "res.partner",
         string="Developer",

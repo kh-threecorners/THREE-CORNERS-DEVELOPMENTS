@@ -10,6 +10,7 @@
 
 from odoo import api, fields, models
 
+
 class PropertyProject(models.Model):
     _name = 'property.project'
     _description = 'Property Project'
@@ -17,7 +18,7 @@ class PropertyProject(models.Model):
 
     name = fields.Char(string='Project Name', required=True,
                        help='The name of the project')
-    image = fields.Binary(string='Image',
+    image = fields.Binary(string='Image', required=True,
                           help='The Project image')
     description = fields.Text(string='Description',
                               help='The description of the project')
