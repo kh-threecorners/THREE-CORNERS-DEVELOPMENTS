@@ -119,6 +119,12 @@ class PropertyProperty(models.Model):
     def create(self, vals):
         record = super(PropertyProperty, self).create(vals)
 
+        category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
+        if category:
+            print(f"🔹 Property Category found: {category.name} (ID {category.id})")
+        else:
+            print("⚠ Category 'property' not found! Product will be created without category.")
+
         price = record.unit_price if record.unit_price else 0.0
         product_vals = {
             'name': record.name,
@@ -126,14 +132,17 @@ class PropertyProperty(models.Model):
             'type': 'service',
             'sale_ok': True,
             'purchase_ok': False,
+            'categ_id': category.id if category else False,
         }
 
         product = self.env['product.product'].create(product_vals)
 
-        if product.product_tmpl_id:
-            product.product_tmpl_id.property_account_income_id = 1388
+        print(f"✅ Product Created: {product.name} (ID {product.id}) for Property {record.name}")
+
+        if product.product_tmpl_id.property_account_income_id:
+            print(f"📌 Income Account from Category: {product.product_tmpl_id.property_account_income_id.id}")
         else:
-            print("⚠ No product_tmpl_id found! Cannot set property_account_income_id.")
+            print("⚠ No income account detected on template after category assignment.")
 
         record.product_id = product.id
 
@@ -141,6 +150,7 @@ class PropertyProperty(models.Model):
             record._onchange_selected_payment_plan_id()
 
         return record
+
 
     def write(self, vals):
         res = super(PropertyProperty, self).write(vals)
@@ -151,8 +161,17 @@ class PropertyProperty(models.Model):
     @api.model
     def _cron_create_missing_products(self):
         properties = self.search([('product_id', '=', False)])
+        print(f"🔵 Found {len(properties)} properties without products.")
+
+        category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
+        if category:
+            print(f"🔹 Using category '{category.name}' with ID {category.id}")
+        else:
+            print("⚠ Category 'property' not found. Products will have no category!")
+
         for prop in properties:
             price = prop.unit_price or 0.0
+            print(f"➡ Creating product for property '{prop.name}' (ID {prop.id}) with price {price}")
 
             product_vals = {
                 'name': prop.name or 'Unnamed Property',
@@ -160,14 +179,13 @@ class PropertyProperty(models.Model):
                 'type': 'service',
                 'sale_ok': True,
                 'purchase_ok': False,
+                'categ_id': category.id if category else False,
             }
 
             product = self.env['product.product'].create(product_vals)
-
-            if product.product_tmpl_id:
-                product.product_tmpl_id.property_account_income_id = 1388
-
             prop.product_id = product.id
+            print(f"✅ Product '{product.name}' (ID {product.id}) created and linked to property '{prop.name}'")
+
 
 
     def action_temp_reserve_sold(self):
