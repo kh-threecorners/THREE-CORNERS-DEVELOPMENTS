@@ -6,3 +6,4 @@ access_property_rental_installment_user,property.rental.installment.user,model_p
 access_sale_order_installment_line,property.sale.order.installment.line,model_sale_order_installment_line,,1,1,1,1
 access_property_rental_repair_user,property.rental.repair.user,model_property_rental_repair,,1,1,1,1
 access_maintenance_maintenance,property.maintenance.maintenance,model_maintenance_maintenance,,1,1,1,1
+access_bank_tag,access_bank_tag,model_bank_tag,,1,1,1,1

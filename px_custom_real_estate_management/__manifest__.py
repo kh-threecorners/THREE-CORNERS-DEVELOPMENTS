@@ -10,8 +10,8 @@
     'description': """
         Real Estate Management System
     """,
-    'depends': ['base', 'mail', 'sale_management', 'website','product',
-                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact' , 'real_estate_management', 'px_custom_contact'],
+    'depends': ['base', 'mail', 'sale_management', 'website','product','account'
+                , 'web', 'sale', 'board', 'px_custom_contact' , 'real_estate_management', 'px_custom_contact'],
     'data': [
         'data/cron.xml',
         'security/ir.model.access.csv',
@@ -26,8 +26,9 @@
         'views/property_rental_view.xml',
         'views/res_partner.xml',
         'views/installments.xml',
-        # 'views/product_product.xml',
-        # 'views/maintenance.xml',
+        'views/account_move_view.xml',
+        'views/account_payment_view.xml',
+        'views/bank_tag_view.xml',
         'reports/property_rental_report.xml',
 
     ],

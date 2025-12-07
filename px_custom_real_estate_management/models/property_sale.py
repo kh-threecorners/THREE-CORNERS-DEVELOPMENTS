@@ -19,6 +19,20 @@ class PropertySale(models.Model):
         'sale_id',
         string="Installments"
     )
+    partner_nationality = fields.Char(string='Nationality')
+
+    partner_street = fields.Char(string='Street')
+    partner_street2 = fields.Char(string='Street 2')
+    partner_zip = fields.Char(string='Zip')
+    partner_jop = fields.Char(string='Job Position')
+    contact_code = fields.Char(string='Contact Code')
+    partner_city = fields.Char(string='City')
+    partner_state_id = fields.Char(string='State')
+    partner_country_id = fields.Many2one("res.country", string='Country')
+    partner_email = fields.Char(string="Email")
+    partner_phone = fields.Char(string="Phone")
+    partner_mobile = fields.Char(string="Mobile")
+    id_number = fields.Char(string="Id Number")
     sale_order_id = fields.Many2one("sale.order", string="Sale Order", readonly=True)
     invoice_id = fields.Many2one("account.move", string="Invoice", readonly=True)
 
