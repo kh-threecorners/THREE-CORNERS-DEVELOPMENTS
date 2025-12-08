@@ -1,0 +1,45 @@
+<odoo>
+    <data>
+        <template id="invoice_paid_only_custom" inherit_id="account.report_invoice_document">
+
+            <xpath  expr="//table[@name='invoice_line_table']" position="replace">
+            </xpath>
+
+            <xpath expr="//div[@id='total']"  position="replace">
+            </xpath>
+            <xpath expr="//div[@id='informations']" position="replace">
+            </xpath>
+             <xpath expr="//div[@id='right-elements']" position="inside">
+                <div class="mb-3">
+                    <strong>Customer:</strong> <span t-field="o.partner_id.name"/>
+                </div>
+                <t t-if="o.is_cheque">
+                    <div class="mb-3">
+                        <strong>Cheque Number:</strong> <span t-field="o.cheque_number"/>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Cheque Bank:</strong> <span t-field="o.customer_cheque_bank_id.name"/>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Cheque Due Date:</strong> <span t-field="o.cheque_due_date"/>
+                    </div>
+                </t>
+                <t t-if="o.payment_state != 'invoicing_legacy'">
+                    <t t-set="payments_vals" t-value="o.sudo().invoice_payments_widget and o.sudo().invoice_payments_widget['content'] or []"/>
+                    <table class="table table-borderless">
+                        <t t-foreach="payments_vals" t-as="payment_vals">
+                            <tr t-if="payment_vals['is_exchange'] == 0">
+                                <td>
+                                    Paid on: <span t-out="payment_vals['date']" t-options='{"widget": "date"}'/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="payment_vals['amount']" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                        </t>
+                    </table>
+                </t>
+            </xpath>
+        </template>
+    </data>
+</odoo>

@@ -1,0 +1,39 @@
+<odoo>
+    <data>
+        <template id="report_payment_receipt_document_hide_total" inherit_id="account.report_payment_receipt_document">
+            <xpath expr="//div[@class='mb-4 mt-3']" position="replace">
+            </xpath>
+            <xpath expr="//table[@name='invoices']" position="replace">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+
+                    <div style="flex-basis: 49%; text-align: left;" >
+                        <h4 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Payment Details</h4>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Amount:</strong> <t t-esc="o.amount or 'None'"/>
+                        </div>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Payment Reference:</strong> <t t-esc="o.payment_reference or 'None'"/>
+                        </div>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Partner:</strong> <t t-esc="o.partner_id.name or 'None'"/>
+                        </div>
+                    </div>
+
+                    <div style="flex-basis: 49%; text-align: right;">
+                        <h4 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Cheque Details</h4>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Cheque Number:</strong> <t t-esc="o.cheque_payment_number or 'None'"/>
+                        </div>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Cheque Bank:</strong> <t t-esc="o.customer_payment_cheque_bank_id.name or 'None'"/>
+                        </div>
+                        <div style="line-height: 1.8; padding-bottom: 5px;">
+                            <strong>Cheque Due Date:</strong> <t t-esc="o.cheque_payment_due_date or 'None'"/>
+                        </div>
+                    </div>
+
+                </div>
+            </xpath>
+        </template>
+    </data>
+</odoo>
