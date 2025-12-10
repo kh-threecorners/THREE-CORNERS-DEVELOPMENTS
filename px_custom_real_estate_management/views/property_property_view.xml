@@ -19,6 +19,13 @@
                     icon="fa-shopping-cart">
                     <field name="sale_order_count" widget="statinfo" string="Sale Orders"/>
                 </button>
+                <button
+                    name="action_view_related_product"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-shopping-cart">
+                    <field name="product_id" widget="statinfo" string="Product"/>
+                </button>
             </xpath>
             <xpath expr="//header" position="inside">
                 <button name="action_temp_reserve_sold"

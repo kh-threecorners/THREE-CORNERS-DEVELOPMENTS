@@ -60,7 +60,6 @@ class SaleOrder(models.Model):
                 order._onchange_payment_plan()
         return res
 
-
     @api.onchange('property_id', 'payment_id')
     def _onchange_payment_plan(self):
         for order in self:
@@ -70,7 +69,6 @@ class SaleOrder(models.Model):
 
             plan = order.payment_id
             total_amount = sum(line.price_subtotal for line in order.order_line)
-
             if not total_amount:
                 continue
 
@@ -87,9 +85,9 @@ class SaleOrder(models.Model):
             lines = []
             seq = 1
             current_date = plan.payment_start_date
-
             uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
 
+            # Down Payment
             if down_payment > 0:
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -102,6 +100,7 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
+            # Periodic Installments
             interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
             for i in range(1, no_of_installments + 1):
                 current_date += relativedelta(months=interval_months)
@@ -116,6 +115,7 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
+            # Annual Installments
             for i in range(1, plan.payment_duration + 1):
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -127,14 +127,10 @@ class SaleOrder(models.Model):
                     'uom_id': uom_id,
                 }))
                 seq += 1
-            print("💡 Maintenance value:", order.property_id.maintenance_value)
-            print("💡 Last installment date:", lines[-1][2]['collection_date'] if lines else plan.payment_start_date)
-            print("💡 order.property_id.maintenance):", order.property_id.maintenance)
-            print("💡 product_id.property_product_id.maintenance_value:", order.order_line.mapped("product_id.property_product_id.maintenance_value"))
-            print("💡 product_id.property_product_id:", order.order_line.mapped("product_id.property_product_id"))
-            print("💡 product_id:", order.order_line.mapped("product_id"))
-            print("💡 product_id.property_product_id.maintenance_value:", sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value")))
-            maintenance_value = sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value"))
+
+            # Maintenance
+            maintenance_value = sum(order.order_line.mapped("product_id.property_maintenance_value"))
+            print("💡 Maintenance value (sum of products):", maintenance_value)
             if maintenance_value > 0:
                 last_date = lines[-1][2]['collection_date'] if lines else plan.payment_start_date
                 lines.append((0, 0, {
@@ -146,6 +142,15 @@ class SaleOrder(models.Model):
                     'collection_date': last_date,
                     'uom_id': uom_id,
                 }))
+                print(f"➤ Added Maintenance installment: {maintenance_value} on {last_date}")
+
+            # Debug prints
+            print("💡 Last installment date:", lines[-1][2]['collection_date'] if lines else plan.payment_start_date)
+            print("💡 order.property_id.maintenance):", order.property_id.maintenance)
+            print("💡 product_id.property_product_id.maintenance_value:",
+                  order.order_line.mapped("product_id.property_maintenance_value"))
+            print("💡 product_id.property_product_id:", order.order_line.mapped("product_id.property_product_id"))
+            print("💡 product_id:", order.order_line.mapped("product_id"))
 
             print("📝 Generated Installment Lines for Order:", order.name)
             for l in lines:
@@ -156,8 +161,102 @@ class SaleOrder(models.Model):
 
             order.installment_line_ids = lines
 
+    #
+    # @api.onchange('property_id', 'payment_id')
+    # def _onchange_payment_plan(self):
+    #     for order in self:
+    #         order.installment_line_ids = [(5, 0, 0)]
+    #         if not order.payment_id:
+    #             continue
+    #
+    #         plan = order.payment_id
+    #         total_amount = sum(line.price_subtotal for line in order.order_line)
+    #
+    #         if not total_amount:
+    #             continue
+    #
+    #         discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
+    #         down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
+    #         remaining_after_down = discounted_price - down_payment
+    #         annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
+    #         amount_to_be_installed = remaining_after_down - (annual_amount * plan.payment_duration)
+    #
+    #         multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
+    #         no_of_installments = plan.payment_duration * multiplier
+    #         amount_per_installment = amount_to_be_installed / no_of_installments if no_of_installments else 0
+    #
+    #         lines = []
+    #         seq = 1
+    #         current_date = plan.payment_start_date
+    #
+    #         uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
+    #
+    #         if down_payment > 0:
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': 'Down Payment',
+    #                 'capital_repayment': down_payment,
+    #                 'remaining_capital': remaining_after_down,
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': plan.payment_start_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #             seq += 1
+    #
+    #         interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
+    #         for i in range(1, no_of_installments + 1):
+    #             current_date += relativedelta(months=interval_months)
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': f'Periodic Installment {i}',
+    #                 'capital_repayment': amount_per_installment,
+    #                 'remaining_capital': remaining_after_down - (i * amount_per_installment),
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': current_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #             seq += 1
+    #
+    #         for i in range(1, plan.payment_duration + 1):
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': f'Annual Installment {i}',
+    #                 'capital_repayment': annual_amount,
+    #                 'remaining_capital': remaining_after_down - (i * annual_amount),
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': plan.payment_start_date + relativedelta(years=i),
+    #                 'uom_id': uom_id,
+    #             }))
+    #             seq += 1
+    #         print("💡 Maintenance value:", order.property_id.maintenance_value)
+    #         print("💡 Last installment date:", lines[-1][2]['collection_date'] if lines else plan.payment_start_date)
+    #         print("💡 order.property_id.maintenance):", order.property_id.maintenance)
+    #         print("💡 product_id.property_product_id.maintenance_value:", order.order_line.mapped("product_id.property_product_id.maintenance_value"))
+    #         print("💡 product_id.property_product_id:", order.order_line.mapped("product_id.property_product_id"))
+    #         print("💡 product_id:", order.order_line.mapped("product_id"))
+    #         print("💡 product_id.property_product_id.maintenance_value:", sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value")))
+    #         maintenance_value = sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value"))
+    #         if maintenance_value > 0:
+    #             last_date = lines[-1][2]['collection_date'] if lines else plan.payment_start_date
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': 'Maintenance',
+    #                 'capital_repayment': maintenance_value,
+    #                 'remaining_capital': 0.0,
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': last_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #
+    #         print("📝 Generated Installment Lines for Order:", order.name)
+    #         for l in lines:
+    #             print("   ➤ Seq:", l[2]['sequence'],
+    #                   "Name:", l[2]['name'],
+    #                   "Amount:", l[2]['capital_repayment'],
+    #                   "Date:", l[2]['collection_date'])
+    #
+    #         order.installment_line_ids = lines
 
-    @api.onchange('property_id')
     def _onchange_property_add_product(self):
         for order in self:
             if order.property_id and order.property_id.product_id:
@@ -301,8 +400,39 @@ class ProductProduct(models.Model):
     _inherit = 'product.product'
 
     property_product_id = fields.Many2one('property.property', string="Property")
+    property_maintenance_value = fields.Float(string="Property Maintenance Value",related="property_product_id.maintenance_value")
+
+    def action_view_related_property(self):
+        self.ensure_one()
+        if not self.property_product_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Related Property'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'property.property',
+            'res_id': self.property_product_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     property_product_id = fields.Many2one('property.property', string="Property")
+    property_maintenance_value = fields.Float(string="Property Maintenance Value",related="property_product_id.maintenance_value")
+
+
+    def action_view_related_property(self):
+        self.ensure_one()
+        if not self.property_product_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Related Property'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'property.property',
+            'res_id': self.property_product_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
