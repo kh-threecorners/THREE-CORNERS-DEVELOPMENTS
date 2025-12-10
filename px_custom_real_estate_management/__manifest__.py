@@ -28,6 +28,8 @@
         'views/installments.xml',
         'views/account_move_view.xml',
         'views/account_payment_view.xml',
+        'views/product_property_views.xml',
+        'views/product_temp_property_views.xml',
         # 'views/report_invoice_custom.xml',
         'views/report_payment_invoice_custom.xml',
         'views/bank_tag_view.xml',

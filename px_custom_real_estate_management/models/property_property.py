@@ -117,14 +117,45 @@ class PropertyProperty(models.Model):
     def action_set_under_construction(self):
         self.write({'state': 'under_construction'})
 
+    # def create(self, vals):
+    #     record = super(PropertyProperty, self).create(vals)
+    #
+    #     category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
+    #     if category:
+    #         print(f"🔹 Property Category found: {category.name} (ID {category.id})")
+    #     else:
+    #         print("⚠ Category 'property' not found! Product will be created without category.")
+    #
+    #     price = record.unit_price if record.unit_price else 0.0
+    #     product_vals = {
+    #         'name': record.name,
+    #         'list_price': price,
+    #         'type': 'service',
+    #         'sale_ok': True,
+    #         'purchase_ok': False,
+    #         'categ_id': category.id if category else False,
+    #     }
+    #
+    #     product = self.env['product.product'].create(product_vals)
+    #
+    #     print(f"✅ Product Created: {product.name} (ID {product.id}) for Property {record.name}")
+    #
+    #     if product.product_tmpl_id.property_account_income_id:
+    #         print(f"📌 Income Account from Category: {product.product_tmpl_id.property_account_income_id.id}")
+    #     else:
+    #         print("⚠ No income account detected on template after category assignment.")
+    #
+    #     record.product_id = product.id
+    #
+    #     if record.selected_payment_plan_id:
+    #         record._onchange_selected_payment_plan_id()
+    #
+    #     return record
+
     def create(self, vals):
         record = super(PropertyProperty, self).create(vals)
 
         category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
-        if category:
-            print(f"🔹 Property Category found: {category.name} (ID {category.id})")
-        else:
-            print("⚠ Category 'property' not found! Product will be created without category.")
 
         price = record.unit_price if record.unit_price else 0.0
         product_vals = {
@@ -138,12 +169,8 @@ class PropertyProperty(models.Model):
 
         product = self.env['product.product'].create(product_vals)
 
-        print(f"✅ Product Created: {product.name} (ID {product.id}) for Property {record.name}")
-
-        if product.product_tmpl_id.property_account_income_id:
-            print(f"📌 Income Account from Category: {product.product_tmpl_id.property_account_income_id.id}")
-        else:
-            print("⚠ No income account detected on template after category assignment.")
+        # ربط المنتج بالعقار
+        product.write({'property_product_id': record.id})
 
         record.product_id = product.id
 
@@ -152,12 +179,39 @@ class PropertyProperty(models.Model):
 
         return record
 
-
     def write(self, vals):
         res = super(PropertyProperty, self).write(vals)
         if 'selected_payment_plan_id' in vals or 'unit_price' in vals or 'maintenance' in vals:
             self._onchange_selected_payment_plan_id()
         return res
+    #
+    # @api.model
+    # def _cron_create_missing_products(self):
+    #     properties = self.search([('product_id', '=', False)])
+    #     print(f"🔵 Found {len(properties)} properties without products.")
+    #
+    #     category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
+    #     if category:
+    #         print(f"🔹 Using category '{category.name}' with ID {category.id}")
+    #     else:
+    #         print("⚠ Category 'property' not found. Products will have no category!")
+    #
+    #     for prop in properties:
+    #         price = prop.unit_price or 0.0
+    #         print(f"➡ Creating product for property '{prop.name}' (ID {prop.id}) with price {price}")
+    #
+    #         product_vals = {
+    #             'name': prop.name or 'Unnamed Property',
+    #             'list_price': price,
+    #             'type': 'service',
+    #             'sale_ok': True,
+    #             'purchase_ok': False,
+    #             'categ_id': category.id if category else False,
+    #         }
+    #
+    #         product = self.env['product.product'].create(product_vals)
+    #         prop.product_id = product.id
+    #         print(f"✅ Product '{product.name}' (ID {product.id}) created and linked to property '{prop.name}'")
 
     @api.model
     def _cron_create_missing_products(self):
@@ -184,10 +238,12 @@ class PropertyProperty(models.Model):
             }
 
             product = self.env['product.product'].create(product_vals)
+
+            # ربط المنتج بالعقار
+            product.write({'property_product_id': prop.id})
+
             prop.product_id = product.id
             print(f"✅ Product '{product.name}' (ID {product.id}) created and linked to property '{prop.name}'")
-
-
 
     def action_temp_reserve_sold(self):
         self.ensure_one()
@@ -302,6 +358,22 @@ class PropertyProperty(models.Model):
                     }))
 
                 rec.installment_line_ids = lines
+
+    def action_view_related_product(self):
+        self.ensure_one()
+        if not self.product_id:
+            return {
+                'type': 'ir.actions.act_window_close'
+            }
+        return {
+            'name': _('Related Product'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'product.product',
+            'res_id': self.product_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
 
 class PaymentInstallmentLine(models.Model):
     _name = 'payment.installment.line'
