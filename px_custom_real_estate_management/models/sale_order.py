@@ -23,6 +23,9 @@ class SaleOrder(models.Model):
         string="SO Installment Invoices",
         compute="_compute_so_installment_invoice_count"
     )
+    property_maintenance_value = fields.Float(string="Maintenance Value",
+        related="property_id.maintenance_value",
+        store=True,)
     property_sale_id = fields.Many2one('property.sale', string="Property Sale")
     @api.depends('installment_line_ids')
     def _compute_so_installment_invoice_count(self):
@@ -56,6 +59,7 @@ class SaleOrder(models.Model):
             if 'property_id' in vals or 'payment_id' in vals:
                 order._onchange_payment_plan()
         return res
+
 
     @api.onchange('property_id', 'payment_id')
     def _onchange_payment_plan(self):
@@ -125,8 +129,12 @@ class SaleOrder(models.Model):
                 seq += 1
             print("💡 Maintenance value:", order.property_id.maintenance_value)
             print("💡 Last installment date:", lines[-1][2]['collection_date'] if lines else plan.payment_start_date)
-
-            maintenance_value = order.property_id.maintenance_value or 0.0
+            print("💡 order.property_id.maintenance):", order.property_id.maintenance)
+            print("💡 product_id.property_product_id.maintenance_value:", order.order_line.mapped("product_id.property_product_id.maintenance_value"))
+            print("💡 product_id.property_product_id:", order.order_line.mapped("product_id.property_product_id"))
+            print("💡 product_id:", order.order_line.mapped("product_id"))
+            print("💡 product_id.property_product_id.maintenance_value:", sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value")))
+            maintenance_value = sum(order.order_line.mapped("product_template_id.property_product_id.maintenance_value"))
             if maintenance_value > 0:
                 last_date = lines[-1][2]['collection_date'] if lines else plan.payment_start_date
                 lines.append((0, 0, {
@@ -135,7 +143,7 @@ class SaleOrder(models.Model):
                     'capital_repayment': maintenance_value,
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
-                    'collection_date': last_date + relativedelta(days=1),
+                    'collection_date': last_date,
                     'uom_id': uom_id,
                 }))
 
@@ -147,6 +155,7 @@ class SaleOrder(models.Model):
                       "Date:", l[2]['collection_date'])
 
             order.installment_line_ids = lines
+
 
     @api.onchange('property_id')
     def _onchange_property_add_product(self):
@@ -166,39 +175,23 @@ class SaleOrder(models.Model):
         for order in self:
             order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
 
-
     def action_create_installment_invoices_from_so(self):
         AccountMove = self.env['account.move']
         created_invoices = AccountMove
 
-        print("🚀 Starting installment invoice creation for", len(self), "orders")
-
         for order in self:
-            print("➡️ Processing Order:", order.name, "(ID:", order.id, ")")
-
-            if not any(line.collection_status != 'collected' for line in order.installment_line_ids):
-                print("⚠️ Skipping:", order.name, "- all installments are already collected")
+            print("➡️ Creating installment invoices for:", order.name)
+            if not order.installment_line_ids:
+                print("⚠️ No installment lines for this order")
                 continue
 
             order_invoices = AccountMove
-
             for line in order.installment_line_ids:
-                print("🔹 Processing line for invoice:", line.name,
-                      "| Amount:", line.capital_repayment,
-                      "| Status:", line.collection_status)
-
-                print("🔸 Checking line:", line.name, "| Status:", line.collection_status, "| Amount:",
-                      line.capital_repayment)
-
                 if line.collection_status == 'collected':
-                    print("⏭️ Skipping line:", line.name, "- already collected")
+                    print(f"⏭️ Skipping collected line: {line.name}")
                     continue
 
-                invoice_vals = order._prepare_invoice()
-                if not invoice_vals:
-                    print("❌ _prepare_invoice() returned None for order:", order.name)
-                    continue
-
+                invoice_vals = order._prepare_invoice() or {}
                 invoice_vals.update({
                     'move_type': 'out_invoice',
                     'invoice_date': line.collection_date or fields.Date.today(),
@@ -209,26 +202,22 @@ class SaleOrder(models.Model):
                         'quantity': 1,
                         'price_unit': line.capital_repayment,
                         'name': line.name,
-                        'product_uom_id': getattr(line, 'uom_id', False) and line.uom_id.id or False,
+                        'product_uom_id': line.uom_id.id if line.uom_id else False,
                     })],
                 })
 
-                print("🧾 Creating invoice for order:", order.name)
-                print("   ➤ Values:", invoice_vals)
-
+                print("📝 Creating invoice with values:", invoice_vals)
                 invoice = AccountMove.create(invoice_vals)
                 order_invoices |= invoice
-
-                print("✅ Created Invoice ID:", invoice.id, "for Order:", order.name)
+                print("✅ Created Invoice ID:", invoice.id, "for line:", line.name)
 
             if order_invoices:
                 order.installment_invoice_created = True
                 created_invoices |= order_invoices
-                print("💾 Marked Order:", order.name, "as having created installment invoices")
+                print("💾 Updated order as having created installment invoices")
 
         print("🎯 Total invoices created:", len(created_invoices))
-
-        action = {
+        return {
             'type': 'ir.actions.act_window',
             'name': 'SO Installment Invoices',
             'res_model': 'account.move',
@@ -236,8 +225,6 @@ class SaleOrder(models.Model):
             'domain': [('id', 'in', created_invoices.ids)],
         }
 
-        print("📤 Returning action:", action)
-        return action
 
 
     def action_create_installment_invoices(self):
@@ -312,5 +299,10 @@ class SaleOrderInstallmentLine(models.Model):
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
+
+    property_product_id = fields.Many2one('property.property', string="Property")
+
+class ProductTemplate(models.Model):
+    _inherit = 'product.template'
 
     property_product_id = fields.Many2one('property.property', string="Property")

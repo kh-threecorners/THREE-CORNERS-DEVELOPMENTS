@@ -23,35 +23,93 @@ class AccountMove(models.Model):
     def create(self, vals_list):
         records = super(AccountMove, self).create(vals_list)
         for record in records:
+            record._create_calendar_events()
             record._create_cheque_activity()
         return records
 
     def write(self, vals):
         res = super(AccountMove, self).write(vals)
-        # نعمل Activity بعد التحديث لو فيه cheque info
         for record in self:
+            record._create_calendar_events()
             record._create_cheque_activity()
         return res
 
     def _create_cheque_activity(self):
         for move in self:
-            # بس نضيف Activity لو السجل فعلاً شيك والتاريخ موجود
+
+            activity_type = self.env.ref('mail.mail_activity_data_todo')
+
+            if move.invoice_date:
+                existing_invoice_activity = self.env['mail.activity'].search([
+                    ('res_model', '=', move._name),
+                    ('res_id', '=', move.id),
+                    ('activity_type_id', '=', activity_type.id),
+                    ('date_deadline', '=', move.invoice_date),
+                    ('summary', '=', f'Invoice Date Reminder: {move.name}')
+                ])
+                if not existing_invoice_activity:
+                    move.activity_schedule(
+                        activity_type_id=activity_type.id,
+                        summary=f'Invoice Date Reminder: {move.name}',
+                        date_deadline=move.invoice_date
+                    )
+
+
             if move.is_cheque and move.cheque_due_date:
-                activity_type = self.env.ref('mail.mail_activity_data_todo')
-                # تحقق لو مفيش Activity موجودة لنفس التاريخ والشيك
-                existing = self.env['mail.activity'].search([
+                existing_cheque_activity = self.env['mail.activity'].search([
                     ('res_model', '=', move._name),
                     ('res_id', '=', move.id),
                     ('activity_type_id', '=', activity_type.id),
                     ('date_deadline', '=', move.cheque_due_date),
                     ('summary', '=', f'Cheque due: {move.cheque_number}')
                 ])
-                if not existing:
+                if not existing_cheque_activity:
                     move.activity_schedule(
                         activity_type_id=activity_type.id,
                         summary=f'Cheque due: {move.cheque_number}',
                         date_deadline=move.cheque_due_date
                     )
+
+    def _create_calendar_events(self):
+        for move in self:
+
+            if move.invoice_date:
+                existing_event = self.env['calendar.event'].search([
+                    ('res_model', '=', move._name),
+                    ('res_id', '=', move.id),
+                    ('start_date', '=', move.invoice_date),
+                    ('name', '=', f'Invoice Reminder: {move.name}')
+                ], limit=1)
+
+                if not existing_event:
+                    self.env['calendar.event'].create({
+                        'name': f'Invoice Reminder: {move.name}',
+                        'start_date': move.invoice_date,
+                        'stop_date': move.invoice_date,
+                        'res_model': move._name,
+                        'res_id': move.id,
+                        'allday': True,
+                        'user_id': move.invoice_user_id.id or self.env.user.id,
+                    })
+
+            if move.is_cheque and move.cheque_due_date:
+                existing_event_cheque = self.env['calendar.event'].search([
+                    ('res_model', '=', move._name),
+                    ('res_id', '=', move.id),
+                    ('start_date', '=', move.cheque_due_date),
+                    ('name', '=', f'Cheque Due: {move.cheque_number}')
+                ], limit=1)
+
+                if not existing_event_cheque:
+                    self.env['calendar.event'].create({
+                        'name': f'Cheque Due: {move.cheque_number}',
+                        'start_date': move.cheque_due_date,
+                        'stop_date': move.cheque_due_date,
+                        'res_model': move._name,
+                        'res_id': move.id,
+                        'allday': True,
+                        'user_id': move.invoice_user_id.id or self.env.user.id,
+                    })
 
     def action_post(self):
         res = super(AccountMove, self).action_post()
