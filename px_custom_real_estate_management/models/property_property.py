@@ -48,6 +48,7 @@ class PropertyProperty(models.Model):
         string="Maintenance Value",
         compute='_compute_maintenance_value',
         store=True,
+        force=True,
         help="The value of maintenance based on the percentage of the original price"
     )
 
@@ -314,5 +315,9 @@ class PaymentInstallmentLine(models.Model):
     due_date = fields.Date(string="Due Date")
     amount = fields.Float(string="Amount")
     type = fields.Selection([('annual', 'Annual'), ('periodic', 'Periodic'),('maintenance', 'Maintenance'), ('down', 'Down Payment')], string="Type")
+
+
+
+
 
 
