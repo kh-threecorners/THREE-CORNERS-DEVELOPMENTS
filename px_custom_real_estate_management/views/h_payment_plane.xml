@@ -45,6 +45,7 @@
                         <field name="annual_payment_percentage"/>
                         <field name="payment_frequency"/>
                         <field name="payment_duration"/>
+                        <field name="annual_installments_count"/>
                         <field name="payment_start_date"/>
                     </group>
                 </sheet>
