@@ -431,7 +431,7 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Installment Invoices',
             'res_model': 'account.move',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('sale_order_id', '=', self.id), ('installment_id', '!=', False)],
             'context': {'create': False},
         }
@@ -443,7 +443,7 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'SO Installment Invoices',
             'res_model': 'account.move',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('sale_order_installment_id.sale_order_id', '=', self.id)],
             'context': {'create': False},
         }
