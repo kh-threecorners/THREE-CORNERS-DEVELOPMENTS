@@ -132,3 +132,17 @@ class AccountPayment(models.Model):
     customer_payment_cheque_bank = fields.Char(string="Customer Cheque Bank")
     customer_payment_cheque_bank_id = fields.Many2one('bank.tag',string="Customer Cheque Bank")
     cheque_payment_due_date = fields.Date(string="Cheque Due Date")
+
+    def action_post(self):
+        res = super(AccountPayment, self).action_post()
+
+        for payment in self:
+            if payment.move_id:
+                move_vals = {
+                    'is_cheque': payment.is_cheque_payment,
+                    'cheque_number': payment.cheque_payment_number,
+                    'customer_cheque_bank_id': payment.customer_payment_cheque_bank_id.id,
+                    'cheque_due_date': payment.cheque_payment_due_date,
+                }
+                payment.move_id.write(move_vals)
+        return res

@@ -7,7 +7,7 @@
                 <div style="border: 2px solid #333; padding: 20px; margin-top: 25px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 
                     <h2 style="text-align: center; margin-top: 0; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 4px double #333; color: #333; font-weight: 700; text-transform: uppercase;">
-                        <t t-if="o.partner_id.lang == 'ar_SY'">إيصال دفع رسمي</t>
+                        <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">إيصال دفع رسمي</t>
                         <t t-else="">Official Payment Receipt</t>
                     </h2>
 
@@ -15,44 +15,45 @@
 
                         <div style="width: 48%; float: left; padding-right: 15px; border-right: 1px solid #ddd;">
                             <h4 style="margin-top: 0; margin-bottom: 15px; color: #007bff; font-size: 18px; border-bottom: 1px solid #007bff; padding-bottom: 5px;">
-                                <t t-if="o.partner_id.lang == 'ar_SY'">معلومات الدفع</t>
+                                <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">معلومات الدفع</t>
                                 <t t-else="">Payment Information</t>
                             </h4>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">المبلغ</t><t t-else="">Amount</t></strong>
-                                <span style="float: right;"><t t-esc="o.amount or 'None'"/></span>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">الشريك</t><t t-else="">Partner</t></strong>
+                                <span style="float: right;"><t t-esc="o.partner_id.name or 'None'"/></span>
                             </div>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">مرجع الدفع</t><t t-else="">Payment Reference</t></strong>
-                                <span style="float: right;"><t t-esc="o.payment_reference or 'None'"/></span>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">المبلغ</t><t t-else="">Amount</t></strong>
+                                <span style="float: right;"><t t-esc="o.amount or 'None'"/></span>
                             </div>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">الشريك</t><t t-else="">Partner</t></strong>
-                                <span style="float: right;"><t t-esc="o.partner_id.name or 'None'"/></span>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">مرجع الدفع</t><t t-else="">Payment Reference</t></strong>
+                                <span style="float: right;"><t t-esc="o.payment_reference or 'None'"/></span>
                             </div>
+
                         </div>
 
                         <div style="width: 48%; float: right; padding-left: 15px;">
                             <h4 style="margin-top: 0; margin-bottom: 15px; color: #007bff; font-size: 18px; border-bottom: 1px solid #007bff; padding-bottom: 5px;">
-                                <t t-if="o.partner_id.lang == 'ar_SY'">معلومات الشيك</t>
+                                <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">معلومات الشيك</t>
                                 <t t-else="">Cheque Information</t>
                             </h4>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">رقم الشيك</t><t t-else="">Cheque Number</t></strong>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">رقم الشيك</t><t t-else="">Cheque Number</t></strong>
                                 <span style="float: right;"><t t-esc="o.cheque_payment_number or 'None'"/></span>
                             </div>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">بنك الشيك</t><t t-else="">Cheque Bank</t></strong>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">بنك الشيك</t><t t-else="">Cheque Bank</t></strong>
                                 <span style="float: right;"><t t-esc="o.customer_payment_cheque_bank_id.name or 'None'"/></span>
                             </div>
 
                             <div style="width: 100%; overflow: hidden; padding: 8px 0; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang == 'ar_SY'">تاريخ استحقاق الشيك</t><t t-else="">Cheque Due Date</t></strong>
+                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">تاريخ استحقاق الشيك</t><t t-else="">Cheque Due Date</t></strong>
                                 <span style="float: right;"><t t-esc="o.cheque_payment_due_date or 'None'"/></span>
                             </div>
                         </div>

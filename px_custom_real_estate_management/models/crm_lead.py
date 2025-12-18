@@ -5,6 +5,7 @@ from odoo.tools.safe_eval import safe_eval
 
 class CrmLead(models.Model):
     _inherit = 'crm.lead'
+
     payment_id = fields.Many2one('payment.plane', string="Payment Plan")
     property_id = fields.Many2one('property.property', string='Property')
     installment_ids = fields.One2many(
