@@ -159,18 +159,14 @@ class PropertyProperty(models.Model):
             'categ_id': category.id if category else False,
         }
 
-        # إنشاء المنتج
         product = self.env['product.product'].create(product_vals)
 
-        # ربط المنتج بالعقار على مستوى product.product
         product.write({'property_product_id': record.id})
 
-        # ربط المنتج بالعقار على مستوى product.template
         product.product_tmpl_id.write({'property_product_id': record.id})
 
         record.product_id = product.id
 
-        # تحديث الأقساط إذا كانت هناك خطة دفع
         if record.selected_payment_plan_id:
             record._onchange_selected_payment_plan_id()
 
@@ -198,13 +194,10 @@ class PropertyProperty(models.Model):
                 'categ_id': category.id if category else False,
             }
 
-            # إنشاء المنتج
             product = self.env['product.product'].create(product_vals)
 
-            # ربط المنتج بالعقار على مستوى product.product
             product.write({'property_product_id': prop.id})
 
-            # ربط المنتج بالعقار على مستوى product.template
             product.product_tmpl_id.write({'property_product_id': prop.id})
 
             prop.product_id = product.id
