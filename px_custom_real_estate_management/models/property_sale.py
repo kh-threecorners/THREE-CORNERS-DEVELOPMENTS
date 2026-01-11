@@ -14,12 +14,8 @@ class PropertySale(models.Model):
         string="Payment Plan",
         help="Select a payment plan for this sale"
     )
-    property_sale_line_ids = fields.One2many(
-        'property.sale.line',
-        'sale_id',
-        string="Installments"
-    )
     partner_nationality = fields.Char(string='Nationality')
+
 
     partner_street = fields.Char(string='Street')
     partner_street2 = fields.Char(string='Street 2')
@@ -28,13 +24,27 @@ class PropertySale(models.Model):
     contact_code = fields.Char(string='Contact Code')
     partner_city = fields.Char(string='City')
     partner_state_id = fields.Char(string='State')
-    partner_country_id = fields.Many2one("res.country", string='Country')
+    partner_country_id = fields.Many2one("res.country",string='Country')
     partner_email = fields.Char(string="Email")
     partner_phone = fields.Char(string="Phone")
     partner_mobile = fields.Char(string="Mobile")
     id_number = fields.Char(string="Id Number")
+
+    property_sale_line_ids = fields.One2many(
+        'property.sale.line',
+        'sale_id',
+        string="Installments"
+    )
     sale_order_id = fields.Many2one("sale.order", string="Sale Order", readonly=True)
     invoice_id = fields.Many2one("account.move", string="Invoice", readonly=True)
+    is_sale_order_created = fields.Boolean(string="Sale Order Created", default=False)
+    is_payment_created = fields.Boolean(string="Payment Created", default=False)
+
+    payment_id = fields.Many2one(
+        'account.payment',
+        string='Payment',
+        readonly=True
+    )
 
     def action_broker_commission_invoice(self):
         for rec in self:
@@ -196,12 +206,18 @@ class PropertySale(models.Model):
                 'partner_id': rec.partner_id.id,
                 'property_sale_id': rec.id,
                 'project_id': rec.project_id.id if rec.project_id else False,
+                'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
                 'order_line': [(0, 0, {
                     'name': rec.name or "Property Sale",
                     'product_id': product_id,
                     'price_unit': rec.sale_price,
                     'product_uom_qty': 1,
                 })]
+            })
+
+            rec.write({
+                'sale_order_id': sale_order.id,
+                'is_sale_order_created': True,
             })
 
             rec.sale_order_id = sale_order.id
@@ -290,6 +306,10 @@ class PropertySale(models.Model):
                 'payment_method_id': self.env.ref('account.account_payment_method_manual_in').id,
                 'journal_id': self.env['account.journal'].search([('type', '=', 'bank')], limit=1).id,
             })
+            rec.write({
+                'payment_id': payment.id,
+                'is_payment_created': True,
+            })
 
         return {
             'type': 'ir.actions.act_window',
@@ -297,6 +317,20 @@ class PropertySale(models.Model):
             'res_model': 'account.payment',
             'view_mode': 'form',
             'res_id': payment.id,
+        }
+
+    def action_view_payment(self):
+        self.ensure_one()
+        if not self.payment_id:
+            return False
+
+        return {
+            'name': _('Payment'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'view_mode': 'form',
+            'res_id': self.payment_id.id,
+            'target': 'current',
         }
 
 

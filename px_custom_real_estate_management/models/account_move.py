@@ -18,9 +18,6 @@ class AccountMove(models.Model):
     customer_cheque_bank_id = fields.Many2one('bank.tag',string="Customer Cheque Bank")
     cheque_due_date = fields.Date(string="Cheque Due Date")
 
-    def _skip_for_refund(self):
-        self.ensure_one()
-        return self.move_type in ('out_refund', 'in_refund')
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -39,8 +36,6 @@ class AccountMove(models.Model):
 
     def _create_cheque_activity(self):
         for move in self:
-            if move._skip_for_refund():
-                continue
 
             activity_type = self.env.ref('mail.mail_activity_data_todo')
 
@@ -51,14 +46,14 @@ class AccountMove(models.Model):
                     ('activity_type_id', '=', activity_type.id),
                     ('date_deadline', '=', move.invoice_date),
                     ('summary', '=', f'Invoice Date Reminder: {move.name}')
-                ], limit=1)
-
+                ])
                 if not existing_invoice_activity:
                     move.activity_schedule(
                         activity_type_id=activity_type.id,
                         summary=f'Invoice Date Reminder: {move.name}',
                         date_deadline=move.invoice_date
                     )
+
 
             if move.is_cheque and move.cheque_due_date:
                 existing_cheque_activity = self.env['mail.activity'].search([
@@ -67,8 +62,7 @@ class AccountMove(models.Model):
                     ('activity_type_id', '=', activity_type.id),
                     ('date_deadline', '=', move.cheque_due_date),
                     ('summary', '=', f'Cheque due: {move.cheque_number}')
-                ], limit=1)
-
+                ])
                 if not existing_cheque_activity:
                     move.activity_schedule(
                         activity_type_id=activity_type.id,
@@ -78,8 +72,6 @@ class AccountMove(models.Model):
 
     def _create_calendar_events(self):
         for move in self:
-            if move._skip_for_refund():
-                continue
 
             if move.invoice_date:
                 existing_event = self.env['calendar.event'].search([
