@@ -47,6 +47,8 @@
                         <field name="payment_duration"/>
                         <field name="annual_installments_count"/>
                         <field name="payment_start_date"/>
+                        <field name="maintenance_percentage"/>
+                        <field name="is_maintenance_in_middle" invisible="1"/>
                     </group>
                 </sheet>
             </form>

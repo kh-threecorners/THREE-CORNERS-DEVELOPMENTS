@@ -91,7 +91,7 @@ class PropertySale(models.Model):
                                       string='Payment Method')
     any_broker = fields.Boolean(string='Any Broker',
                                 help="Enable if this sale have a Broker")
-    broker_id = fields.Many2one('res.partner', string="Broker name",
+    broker_id = fields.Many2one('res.partner', string="Broker Company",
                                 help='The broker for this property sale')
     commission_plan_id = fields.Many2one('property.commission',
                                          string="Commission Plan",

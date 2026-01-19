@@ -74,8 +74,6 @@ class SaleOrder(models.Model):
                 continue
 
             plan = order.payment_id
-            # total_amount = sum(line.price_subtotal for line in order.order_line)
-            # total_amount = sum(line.price_subtotal for line in order.order_line)
             # السعر اللي الحساب عليه الأقساط على أساس Unit Price
             total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
 
@@ -99,22 +97,13 @@ class SaleOrder(models.Model):
             amount_per_periodic = remaining_after_down - annual_total_amount
             amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
 
-            print("\n📊 Calculation Summary:")
-            print(f"Discounted Price: {discounted_price}")
-            print(f"Down Payment: {down_payment}")
-            print(f"Remaining After Down Payment: {remaining_after_down}")
-            print(f"Annual Count: {annual_count}")
-            print(f"Annual Total Amount: {annual_total_amount}")
-            print(f"No of Periodic Installments: {no_of_periodic_installments}")
-            print(f"Amount / Periodic Installment: {amount_per_installment}")
-
             lines = []
             seq = 1
             current_date = plan.payment_start_date
             uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
 
+            # 1. إضافة الدفعة المقدمة
             if down_payment > 0:
-                print(f"\n➕ Adding Down Payment Installment: {down_payment}")
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': 'Down Payment',
@@ -126,13 +115,10 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
+            # 2. توليد الأقساط الدورية
             interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
-            print("\n📅 Generating Periodic Installments:")
-
             for i in range(1, no_of_periodic_installments + 1):
                 current_date += relativedelta(months=interval_months)
-                print(f"   ➤ Periodic {i}: {amount_per_installment} on {current_date}")
-
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': f'Periodic Installment {i}',
@@ -144,12 +130,9 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            print("\n📅 Annual Installments Check:")
+            # 3. إضافة الأقساط السنوية
             if annual_count > 0:
-                print(f"✔ Annual installments = {annual_count}")
                 for i in range(1, annual_count + 1):
-                    print(f"   ➤ Annual {i}: {annual_total_amount / annual_count}")
-
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Annual Installment {i}',
@@ -161,19 +144,42 @@ class SaleOrder(models.Model):
                     }))
                     seq += 1
 
-            maintenance_value = sum(order.order_line.mapped("product_id.property_maintenance_value"))
+            # 4. إضافة قسط الصيانة في منتصف المدة (التعديل الجديد)
+            # ملاحظة: تأكد من إضافة حقل maintenance_percentage في موديل payment.plane
+            maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) if hasattr(plan,
+                                                                                                'maintenance_percentage') else 0.0
+
             if maintenance_value > 0:
-                last_date = lines[-1][2]['collection_date']
-                print(f"\n🛠 Maintenance Added({maintenance_value}) on {last_date}")
-                lines.append((0, 0, {
-                    'sequence': seq,
-                    'name': 'Maintenance',
-                    'capital_repayment': maintenance_value,
-                    'remaining_capital': 0.0,
-                    'collection_status': 'not_due',
-                    'collection_date': last_date,
-                    'uom_id': uom_id,
-                }))
+                # حساب نقطة المنتصف بناءً على عدد الأقساط التي تم إنشاؤها حتى الآن
+                if lines:
+                    middle_index = len(lines) // 2
+                    # نأخذ تاريخ القسط الذي سيسبقه في الترتيب
+                    target_date = lines[middle_index][2]['collection_date']
+
+                    lines.insert(middle_index, (0, 0, {
+                        'sequence': 0,  # سيتم تحديثه في الخطوة التالية
+                        'name': 'Maintenance Installment',
+                        'capital_repayment': maintenance_value,
+                        'remaining_capital': 0.0,
+                        'collection_status': 'not_due',
+                        'collection_date': target_date,
+                        'uom_id': uom_id,
+                    }))
+                else:
+                    # في حال عدم وجود أقساط أخرى، يوضع في البداية
+                    lines.append((0, 0, {
+                        'sequence': 1,
+                        'name': 'Maintenance Installment',
+                        'capital_repayment': maintenance_value,
+                        'remaining_capital': 0.0,
+                        'collection_status': 'not_due',
+                        'collection_date': plan.payment_start_date,
+                        'uom_id': uom_id,
+                    }))
+
+            # 5. إعادة ترتيب التسلسل (Sequence) لضمان الترتيب الصحيح بعد الإدراج في المنتصف
+            for i, line in enumerate(lines):
+                line[2]['sequence'] = i + 1
 
             print("\n===== Final Generated Installments =====")
             for r in lines:
@@ -182,6 +188,130 @@ class SaleOrder(models.Model):
 
             order.installment_line_ids = lines
             print("===== Done Onchange =====\n")
+
+    #
+    # @api.onchange('property_id', 'payment_id')
+    # def _onchange_payment_plan(self):
+    #     for order in self:
+    #         print("\n===================== Onchange Triggered =====================")
+    #         print(f"SO: {order.name}")
+    #
+    #         print("🔄 Clearing Old Installments...")
+    #         order.installment_line_ids = [(5, 0, 0)]
+    #
+    #         if not order.payment_id:
+    #             print("❌ No Payment Plan Selected → EXIT")
+    #             continue
+    #
+    #         plan = order.payment_id
+    #         # total_amount = sum(line.price_subtotal for line in order.order_line)
+    #         # total_amount = sum(line.price_subtotal for line in order.order_line)
+    #         # السعر اللي الحساب عليه الأقساط على أساس Unit Price
+    #         total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
+    #
+    #         if not total_amount:
+    #             print("❌ No amount calculated from SO lines → EXIT")
+    #             continue
+    #
+    #         print(f"💡 Payment Plan: {plan.name}")
+    #         print(f"💰 Total Amount: {total_amount}")
+    #
+    #         discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
+    #         down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
+    #         remaining_after_down = discounted_price - down_payment
+    #
+    #         annual_count = plan.annual_installments_count
+    #         annual_total_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
+    #
+    #         multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
+    #         no_of_periodic_installments = plan.payment_duration * multiplier
+    #
+    #         amount_per_periodic = remaining_after_down - annual_total_amount
+    #         amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
+    #
+    #         print("\n📊 Calculation Summary:")
+    #         print(f"Discounted Price: {discounted_price}")
+    #         print(f"Down Payment: {down_payment}")
+    #         print(f"Remaining After Down Payment: {remaining_after_down}")
+    #         print(f"Annual Count: {annual_count}")
+    #         print(f"Annual Total Amount: {annual_total_amount}")
+    #         print(f"No of Periodic Installments: {no_of_periodic_installments}")
+    #         print(f"Amount / Periodic Installment: {amount_per_installment}")
+    #
+    #         lines = []
+    #         seq = 1
+    #         current_date = plan.payment_start_date
+    #         uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
+    #
+    #         if down_payment > 0:
+    #             print(f"\n➕ Adding Down Payment Installment: {down_payment}")
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': 'Down Payment',
+    #                 'capital_repayment': down_payment,
+    #                 'remaining_capital': remaining_after_down,
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': plan.payment_start_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #             seq += 1
+    #
+    #         interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
+    #         print("\n📅 Generating Periodic Installments:")
+    #
+    #         for i in range(1, no_of_periodic_installments + 1):
+    #             current_date += relativedelta(months=interval_months)
+    #             print(f"   ➤ Periodic {i}: {amount_per_installment} on {current_date}")
+    #
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': f'Periodic Installment {i}',
+    #                 'capital_repayment': amount_per_installment,
+    #                 'remaining_capital': remaining_after_down - (i * amount_per_installment),
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': current_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #             seq += 1
+    #
+    #         print("\n📅 Annual Installments Check:")
+    #         if annual_count > 0:
+    #             print(f"✔ Annual installments = {annual_count}")
+    #             for i in range(1, annual_count + 1):
+    #                 print(f"   ➤ Annual {i}: {annual_total_amount / annual_count}")
+    #
+    #                 lines.append((0, 0, {
+    #                     'sequence': seq,
+    #                     'name': f'Annual Installment {i}',
+    #                     'capital_repayment': annual_total_amount / annual_count,
+    #                     'remaining_capital': remaining_after_down - ((i * annual_total_amount) / annual_count),
+    #                     'collection_status': 'not_due',
+    #                     'collection_date': plan.payment_start_date + relativedelta(years=i),
+    #                     'uom_id': uom_id,
+    #                 }))
+    #                 seq += 1
+    #
+    #         maintenance_value = sum(order.order_line.mapped("product_id.property_maintenance_value"))
+    #         if maintenance_value > 0:
+    #             last_date = lines[-1][2]['collection_date']
+    #             print(f"\n🛠 Maintenance Added({maintenance_value}) on {last_date}")
+    #             lines.append((0, 0, {
+    #                 'sequence': seq,
+    #                 'name': 'Maintenance',
+    #                 'capital_repayment': maintenance_value,
+    #                 'remaining_capital': 0.0,
+    #                 'collection_status': 'not_due',
+    #                 'collection_date': last_date,
+    #                 'uom_id': uom_id,
+    #             }))
+    #
+    #         print("\n===== Final Generated Installments =====")
+    #         for r in lines:
+    #             d = r[2]
+    #             print(f"{d['sequence']} | {d['name']} | {d['capital_repayment']} | {d['collection_date']}")
+    #
+    #         order.installment_line_ids = lines
+    #         print("===== Done Onchange =====\n")
     def _onchange_property_add_product(self):
         for order in self:
             if order.property_id and order.property_id.product_id:

@@ -46,6 +46,89 @@ class PropertySale(models.Model):
         readonly=True
     )
 
+    internal_sales_person_id = fields.Many2one('res.partner', string="Sales Person ")
+    internal_commission_plan_id = fields.Many2one('property.commission', string="Commission Plan")
+    internal_commission_type = fields.Char(compute='_compute_internal_commission', store=True, string="Commission Type")
+    internal_commission = fields.Monetary(string='Commission', compute='_compute_internal_commission', store=True)
+
+    external_broker_id = fields.Many2one(
+        'res.partner',
+        string="Broker",
+        domain="[('is_broker', '=', True)]",
+        help="The external broker for this property sale"
+    )
+    external_commission_plan_id = fields.Many2one(
+        'property.commission',
+        string="Commission Plan",
+        help="Select the Commission Plan for the external broker"
+    )
+    external_commission_type = fields.Char(
+        compute='_compute_external_commission',
+        string="Commission Type",
+        store=True
+    )
+    external_commission = fields.Monetary(
+        string='Commission',
+        compute='_compute_external_commission',
+        store=True
+    )
+
+
+    @api.depends('external_commission_plan_id', 'sale_price')
+    def _compute_external_commission(self):
+        """Calculate external broker commission based on commission plan and sale price"""
+        for rec in self:
+            if rec.external_commission_plan_id and rec.sale_price > 0:
+                rec.external_commission_type = rec.external_commission_plan_id.commission_type
+                if rec.external_commission_plan_id.commission_type == 'fixed':
+                    rec.external_commission = rec.external_commission_plan_id.commission
+                else:  # percentage
+                    rec.external_commission = (rec.sale_price * rec.external_commission_plan_id.commission) / 100
+            else:
+                rec.external_commission_type = ''
+                rec.external_commission = 0.0
+
+
+    def action_external_commission_invoice(self):
+        for rec in self:
+            if not rec.external_broker_id:
+                raise ValidationError(_("No external broker selected."))
+
+            if not rec.external_commission or rec.external_commission <= 0:
+                raise ValidationError(_("External commission amount is missing or zero."))
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'in_invoice',
+                'partner_id': rec.external_broker_id.id,
+                'invoice_date': fields.Date.today(),
+                'invoice_line_ids': [(0, 0, {
+                    'name': f'External Broker Commission for {rec.name}',
+                    'price_unit': rec.external_commission,
+                    'quantity': 1,
+                })]
+            })
+
+            return {
+                'name': _('External Broker Invoice'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.move',
+                'view_mode': 'form',
+                'res_id': invoice.id,
+            }
+
+    @api.depends('internal_commission_plan_id', 'sale_price')
+    def _compute_internal_commission(self):
+        for rec in self:
+            if rec.internal_commission_plan_id and rec.sale_price > 0:
+                rec.internal_commission_type = rec.internal_commission_plan_id.commission_type
+                if rec.internal_commission_plan_id.commission_type == 'fixed':
+                    rec.internal_commission = rec.internal_commission_plan_id.commission
+                else:
+                    rec.internal_commission = (rec.sale_price * rec.internal_commission_plan_id.commission) / 100
+            else:
+                rec.internal_commission_type = ''
+                rec.internal_commission = 0.0
+
     def action_broker_commission_invoice(self):
         for rec in self:
             if not rec.broker_id:
@@ -73,10 +156,53 @@ class PropertySale(models.Model):
                 'res_id': invoice.id,
             }
 
+    def action_internal_commission_invoice(self):
+        for rec in self:
+            if not rec.internal_sales_person_id:
+                raise ValidationError(_("No internal sales person selected."))
+
+            if not rec.internal_commission or rec.internal_commission <= 0:
+                raise ValidationError(_("Internal commission amount is missing or zero."))
+
+            partner = rec.internal_sales_person_id.partner_id
+            if not partner:
+                raise ValidationError(_("The selected internal sales person does not have a related partner record."))
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'in_invoice',
+
+                'partner_id': partner.id,
+
+                'invoice_date': fields.Date.today(),
+                'invoice_line_ids': [(0, 0, {
+                    'name': f'Internal Commission for {rec.name}',
+
+                    # 5. استخدام مبلغ عمولة الشخص الجديد
+                    'price_unit': rec.internal_commission,
+
+                    'quantity': 1,
+                })]
+            })
+
+            return {
+                'name': _('Internal Commission Invoice'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.move',
+                'view_mode': 'form',
+                'res_id': invoice.id,
+            }
+
     def action_cancel(self):
         """Cancel sale and reset property to available if needed"""
         for rec in self:
             rec.state = "cancel"
+            if rec.property_id:
+                rec.property_id.state = "available"
+
+    # def action_cancel(self):
+    #     """Cancel sale and reset property to available if needed"""
+    #     for rec in self:
+    #         rec.state = "cancel"
 
     def action_draft(self):
         for rec in self:
@@ -353,3 +479,6 @@ class PropertySaleLine(models.Model):
     )
     collection_amount = fields.Float(string="Collected Amount")
     collection_date = fields.Date(string="Collection Date")
+
+
+

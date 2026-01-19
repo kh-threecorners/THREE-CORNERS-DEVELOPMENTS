@@ -7,19 +7,22 @@
             <field name="code">model._cron_release_temp_reservations()</field>
             <field name="interval_number">1</field>
             <field name="interval_type">minutes</field>
-<!--            <field name="numbercall">-1</field>-->
+            <!--            <field name="numbercall">-1</field>-->
             <field name="active">True</field>
         </record>
 
-         <record id="ir_cron_create_property_products" model="ir.cron">
-            <field name="name">Create Product for Properties Missing Product</field>
-            <field name="model_id" ref="model_property_property"/>
+        <record id="ir_cron_apply_late_payment_fees" model="ir.cron">
+            <field name="name">Account: Apply Late Payment Fees</field>
+            <field name="model_id" ref="account.model_account_move"/>
             <field name="state">code</field>
-            <field name="code">model._cron_create_missing_products()</field>
+            <field name="code">model._process_late_fee_invoices()</field>
+            <field name="user_id" ref="base.user_root"/>
             <field name="interval_number">1</field>
-            <field name="interval_type">hours</field>
+            <field name="interval_type">days</field>
 <!--            <field name="numbercall">-1</field>-->
+<!--            <field name="doall">False</field>-->
             <field name="active">True</field>
         </record>
+
     </data>
 </odoo>

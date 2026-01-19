@@ -277,30 +277,100 @@ class PropertyProperty(models.Model):
                 'temp_reserved_until': False,
             })
 
+    # @api.onchange('selected_payment_plan_id')
+    # def _onchange_selected_payment_plan_id(self):
+    #     for rec in self:
+    #         rec.installment_line_ids = [(5, 0, 0)]
+    #         if rec.selected_payment_plan_id:
+    #             plan = rec.selected_payment_plan_id
+    #
+    #             discount_amount = rec.unit_price * (plan.discount / 100.0)
+    #             price_after_discount = rec.unit_price - discount_amount
+    #
+    #             down_payment = price_after_discount * (plan.down_payment_percentage / 100.0)
+    #
+    #             remaining_after_down = price_after_discount - down_payment
+    #
+    #             annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
+    #
+    #             amount_to_be_installed = remaining_after_down - (annual_amount * plan.payment_duration)
+    #
+    #             multiplier = {
+    #                 'monthly': 12,
+    #                 'quarterly': 4,
+    #                 'semi_annually': 2,
+    #             }.get(plan.payment_frequency, 0)
+    #
+    #             no_of_installments = plan.payment_duration * multiplier
+    #             amount_per_installment = amount_to_be_installed / no_of_installments if no_of_installments else 0.0
+    #
+    #             lines = []
+    #             current_date = plan.payment_start_date
+    #
+    #             if down_payment > 0:
+    #                 lines.append((0, 0, {
+    #                     'sequence': 0,
+    #                     'name': "Down Payment",
+    #                     'due_date': plan.payment_start_date,
+    #                     'amount': down_payment,
+    #                     'type': 'down',
+    #                 }))
+    #
+    #             interval_months = {
+    #                 'monthly': 1,
+    #                 'quarterly': 3,
+    #                 'semi_annually': 6,
+    #             }.get(plan.payment_frequency, 1)
+    #
+    #             for i in range(1, no_of_installments + 1):
+    #                 current_date += relativedelta(months=interval_months)
+    #                 lines.append((0, 0, {
+    #                     'sequence': i,
+    #                     'name': f"Periodic Installment {i}",
+    #                     'due_date': current_date,
+    #                     'amount': amount_per_installment,
+    #                     'type': 'periodic',
+    #                 }))
+    #
+    #             if plan.annual_payment_percentage > 0:
+    #                 for i in range(1, plan.payment_duration + 1):
+    #                     lines.append((0, 0, {
+    #                         'sequence': no_of_installments + i,
+    #                         'name': f"Annual Installment {i}",
+    #                         'due_date': plan.payment_start_date + relativedelta(years=i),
+    #                         'amount': annual_amount,
+    #                         'type': 'annual',
+    #                     }))
+    #
+    #             if rec.maintenance_value and rec.maintenance_value > 0:
+    #                 last_seq = lines[-1][2]['sequence'] if lines else 0
+    #                 last_date = lines[-1][2]['due_date'] if lines else plan.payment_start_date
+    #                 lines.append((0, 0, {
+    #                     'sequence': last_seq + 1,
+    #                     'name': "Maintenance",
+    #                     'due_date': last_date + relativedelta(days=1),
+    #                     'amount': rec.maintenance_value,
+    #                     'type': 'maintenance',
+    #                 }))
+    #
+    #             rec.installment_line_ids = lines
+
     @api.onchange('selected_payment_plan_id')
     def _onchange_selected_payment_plan_id(self):
         for rec in self:
             rec.installment_line_ids = [(5, 0, 0)]
             if rec.selected_payment_plan_id:
                 plan = rec.selected_payment_plan_id
-
                 discount_amount = rec.unit_price * (plan.discount / 100.0)
                 price_after_discount = rec.unit_price - discount_amount
-
                 down_payment = price_after_discount * (plan.down_payment_percentage / 100.0)
-
                 remaining_after_down = price_after_discount - down_payment
-
                 annual_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
 
-                amount_to_be_installed = remaining_after_down - (annual_amount * plan.payment_duration)
+                total_annual_all_years = annual_amount * plan.payment_duration
+                amount_to_be_installed = remaining_after_down - total_annual_all_years
 
-                multiplier = {
-                    'monthly': 12,
-                    'quarterly': 4,
-                    'semi_annually': 2,
-                }.get(plan.payment_frequency, 0)
-
+                multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
                 no_of_installments = plan.payment_duration * multiplier
                 amount_per_installment = amount_to_be_installed / no_of_installments if no_of_installments else 0.0
 
@@ -316,12 +386,7 @@ class PropertyProperty(models.Model):
                         'type': 'down',
                     }))
 
-                interval_months = {
-                    'monthly': 1,
-                    'quarterly': 3,
-                    'semi_annually': 6,
-                }.get(plan.payment_frequency, 1)
-
+                interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
                 for i in range(1, no_of_installments + 1):
                     current_date += relativedelta(months=interval_months)
                     lines.append((0, 0, {
@@ -335,24 +400,38 @@ class PropertyProperty(models.Model):
                 if plan.annual_payment_percentage > 0:
                     for i in range(1, plan.payment_duration + 1):
                         lines.append((0, 0, {
-                            'sequence': no_of_installments + i,
+                            'sequence': 0,
                             'name': f"Annual Installment {i}",
                             'due_date': plan.payment_start_date + relativedelta(years=i),
                             'amount': annual_amount,
                             'type': 'annual',
                         }))
 
-                if rec.maintenance_value and rec.maintenance_value > 0:
-                    last_seq = lines[-1][2]['sequence'] if lines else 0
-                    last_date = lines[-1][2]['due_date'] if lines else plan.payment_start_date
-                    lines.append((0, 0, {
-                        'sequence': last_seq + 1,
-                        'name': "Maintenance",
-                        'due_date': last_date + relativedelta(days=1),
-                        'amount': rec.maintenance_value,
-                        'type': 'maintenance',
-                    }))
+                # إضافة قسط الصيانة (بناءً على إعدادات الخطة)
+                maintenance_value = rec.unit_price * (plan.maintenance_percentage / 100.0)
+                if maintenance_value > 0:
+                    if plan.is_maintenance_in_middle and lines:
+                        middle_index = len(lines) // 2
+                        target_date = lines[middle_index][2]['due_date']
+                        lines.insert(middle_index, (0, 0, {
+                            'sequence': 0,
+                            'name': "Maintenance Installment",
+                            'due_date': target_date,
+                            'amount': maintenance_value,
+                            'type': 'maintenance',
+                        }))
+                    else:
+                        last_date = lines[-1][2]['due_date'] if lines else plan.payment_start_date
+                        lines.append((0, 0, {
+                            'sequence': 0,
+                            'name': "Maintenance Installment",
+                            'due_date': last_date,
+                            'amount': maintenance_value,
+                            'type': 'maintenance',
+                        }))
 
+                for i, line in enumerate(lines):
+                    line[2]['sequence'] = i + 1
                 rec.installment_line_ids = lines
 
     def action_view_related_product(self):

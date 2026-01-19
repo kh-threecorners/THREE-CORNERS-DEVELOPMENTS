@@ -1,4 +1,8 @@
 from odoo import models, api, _, fields
+from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountMove(models.Model):
@@ -17,6 +21,119 @@ class AccountMove(models.Model):
     customer_cheque_bank = fields.Char(string="Customer Cheque Bank")
     customer_cheque_bank_id = fields.Many2one('bank.tag',string="Customer Cheque Bank")
     cheque_due_date = fields.Date(string="Cheque Due Date")
+
+    late_fee_percentage = fields.Float(
+        string="Late Fee Percentage",
+        default=0.0,
+        copy=False,
+    )
+
+    is_late_fee_applied = fields.Boolean(
+        string="Is Late Fee Applied",
+        default=False,
+        copy=False,
+        readonly=True
+    )
+
+
+    #
+    # @api.model
+    # def _process_late_fee_invoices(self):
+    #     """
+    #     هذه الدالة يتم استدعاؤها بواسطة Cron Job للبحث عن الفواتير المتأخرة
+    #     وتطبيق غرامة التأخير عليها.
+    #     """
+    #     _logger.info("بدء مهمة التحقق من غرامات التأخير...")
+    #
+    #     # ابحث عن منتج الغرامة. يجب أن يكون موجوداً ومُعداً بشكل صحيح.
+    #     late_fee_product = self.env['product.product'].search([('default_code', '=', 'LATE_FEE')], limit=1)
+    #     if not late_fee_product:
+    #         _logger.error("منتج غرامة التأخير (LATE_FEE) غير موجود. يرجى إنشائه أولاً.")
+    #         return
+    #
+    #     # جلب الفواتير المستحقة التي لم تطبق عليها الغرامة بعد
+    #     overdue_invoices = self.search([
+    #         ('move_type', '=', 'out_invoice'),
+    #         ('state', '=', 'posted'),
+    #         ('invoice_date_due', '<', fields.Date.context_today(self)),
+    #         ('late_fee_percentage', '>', 0),
+    #         ('is_late_fee_applied', '=', False),
+    #         ('payment_state', 'in', ['not_paid', 'partial'])
+    #     ])
+    #
+    #     if not overdue_invoices:
+    #         _logger.info("لا توجد فواتير متأخرة لتطبيق الغرامة عليها.")
+    #         return
+    #
+    #     for invoice in overdue_invoices:
+    #         # --- هذا هو السطر الذي تم تعديله ---
+    #         # حساب قيمة الغرامة بقسمة النسبة على 100 أولاً
+    #         fee_amount = invoice.amount_total * (invoice.late_fee_percentage / 100.0)
+    #         # ------------------------------------
+    #
+    #         if fee_amount <= 0:
+    #             continue
+    #
+    #         # تحويل الفاتورة إلى وضع المسودة لإضافة السطر
+    #         invoice.button_draft()
+    #
+    #         # إضافة سطر الغرامة
+    #         self.env['account.move.line'].create({
+    #             'move_id': invoice.id,
+    #             'product_id': late_fee_product.id,
+    #             'name': f"غرامة تأخير للفاتورة {invoice.name}",
+    #             'quantity': 1,
+    #             'price_unit': fee_amount,
+    #         })
+    #
+    #         # تحديث حقل "تم تطبيق الغرامة" لمنع إضافتها مرة أخرى
+    #         invoice.write({'is_late_fee_applied': True})
+    #
+    #         # إعادة ترحيل الفاتورة
+    #         invoice.action_post()
+    #         _logger.info(f"تم تطبيق غرامة بقيمة {fee_amount} على الفاتورة {invoice.name}")
+    #
+    #     _logger.info("انتهاء مهمة التحقق من غرامات التأخير.")
+
+
+    @api.model
+    def _process_late_fee_invoices(self):
+        late_fee_product = self.env['product.product'].search([('default_code', '=', 'LATE_FEE')], limit=1)
+        if not late_fee_product:
+            _logger.error("منتج غرامة التأخير (LATE_FEE) غير موجود. يرجى إنشائه أولاً.")
+            return
+        overdue_invoices = self.search([
+            ('move_type', '=', 'out_invoice'),
+            ('state', 'in', ['posted', 'draft']),
+            ('invoice_date_due', '<', fields.Date.context_today(self)),
+            ('late_fee_percentage', '>', 0),
+            ('is_late_fee_applied', '=', False),
+            ('payment_state', 'in', ['not_paid', 'partial'])
+        ])
+
+        if not overdue_invoices:
+            _logger.info("لا توجد فواتير متأخرة لتطبيق الغرامة عليها.")
+            return
+
+        for invoice in overdue_invoices:
+            fee_amount = invoice.amount_total * (invoice.late_fee_percentage / 100.0)
+
+            if fee_amount <= 0:
+                continue
+
+            invoice.button_draft()
+            self.env['account.move.line'].create({
+                'move_id': invoice.id,
+                'product_id': late_fee_product.id,
+                'name': f"غرامة تأخير للفاتورة {invoice.name}",
+                'quantity': 1,
+                'price_unit': fee_amount,
+            })
+            invoice.write({'is_late_fee_applied': True})
+            invoice.action_post()
+            _logger.info(f"تم تطبيق غرامة بقيمة {fee_amount} على الفاتورة {invoice.name}")
+
+        _logger.info("انتهاء مهمة التحقق من غرامات التأخير.")
 
     #
     # @api.model_create_multi
