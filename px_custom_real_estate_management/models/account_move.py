@@ -104,7 +104,7 @@ class AccountMove(models.Model):
             return
         overdue_invoices = self.search([
             ('move_type', '=', 'out_invoice'),
-            ('state', 'in', ['posted', 'draft']),
+            ('state', '=', 'posted'),
             ('invoice_date_due', '<', fields.Date.context_today(self)),
             ('late_fee_percentage', '>', 0),
             ('is_late_fee_applied', '=', False),

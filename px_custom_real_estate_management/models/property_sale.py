@@ -164,7 +164,7 @@ class PropertySale(models.Model):
             if not rec.internal_commission or rec.internal_commission <= 0:
                 raise ValidationError(_("Internal commission amount is missing or zero."))
 
-            partner = rec.internal_sales_person_id.partner_id
+            partner = rec.internal_sales_person_id
             if not partner:
                 raise ValidationError(_("The selected internal sales person does not have a related partner record."))
 

@@ -107,7 +107,18 @@ class PropertyProperty(models.Model):
             else:
                 rec.maintenance_value = 0.0
 
+    def action_create_sale_order(self):
+        self.ensure_one()
 
+        action = super().action_create_sale_order()
+
+        if action.get('res_model') == 'sale.order' and action.get('res_id'):
+            sale_order = self.env['sale.order'].browse(action['res_id'])
+
+            if self.selected_payment_plan_id:
+                sale_order.payment_id = self.selected_payment_plan_id.id
+
+        return action
     def action_set_under_maintenance(self):
         self.write({'state': 'under_maintenance'})
 
