@@ -90,7 +90,7 @@
                             <field name="sale_price" groups="real_estate_management.property_sale_sale_price_approval"/>
                             <field name="sale_price" readonly="1" groups="!real_estate_management.property_sale_sale_price_approval"/>
 <!--                            <field name="discount" widget="percent"/>-->
-<!--                            <field name="price_after_discount"/>-->
+                            <field name="price_after_discount"/>
                         </group>
                     </group>
                     <group string="Broker Details">
