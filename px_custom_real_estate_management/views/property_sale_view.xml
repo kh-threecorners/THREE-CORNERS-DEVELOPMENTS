@@ -148,6 +148,11 @@
             <xpath expr="//field[@name='payment_method']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <xpath expr="//field[@name='discount']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath> <xpath expr="//field[@name='price_after_discount']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
             <xpath expr="//field[@name='reservation_date']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
