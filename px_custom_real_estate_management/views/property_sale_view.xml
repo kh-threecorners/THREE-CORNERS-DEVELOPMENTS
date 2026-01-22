@@ -128,7 +128,7 @@
             <xpath expr="//field[@name='property_id']" position="after">
                 <field name="reservation_duration_hours"/>
                 <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
-                <field name="price_after_discount"/>
+<!--                <field name="price_after_discount"/>-->
             </xpath>
             <xpath expr="//field[@name='broker_id']" position="attributes">
                 <attribute name="domain">[('is_broker', '=', True)]</attribute>
@@ -150,9 +150,9 @@
             </xpath>
             <xpath expr="//field[@name='discount']" position="attributes">
                 <attribute name="invisible">1</attribute>
-            </xpath> <xpath expr="//field[@name='price_after_discount']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
+<!--            </xpath> <xpath expr="//field[@name='price_after_discount']" position="attributes">-->
+<!--                <attribute name="invisible">1</attribute>-->
+<!--            </xpath>-->
             <xpath expr="//field[@name='reservation_date']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
