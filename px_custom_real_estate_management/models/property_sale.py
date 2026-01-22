@@ -311,11 +311,110 @@ class PropertySale(models.Model):
 
             rec.property_sale_line_ids = lines
 
+    # def action_create_sale_order(self):
+    #     """
+    #     Create a linked Sale Order for this Property Sale.
+    #     Ensures the property has a product and the customer is set.
+    #     """
+    #
+    #     for rec in self:
+    #         if rec.sale_order_id:
+    #             raise ValidationError(_("A Sale Order already exists for this record."))
+    #
+    #         if not rec.partner_id:
+    #             raise ValidationError(_("Please select a customer before creating a Sale Order."))
+    #
+    #         product_id = rec.property_id.product_id.id if rec.property_id and rec.property_id.product_id else False
+    #         if not product_id:
+    #             raise ValidationError(_("The property does not have a linked product for the Sale Order."))
+    #
+    #         sale_order = self.env['sale.order'].create({
+    #             'partner_id': rec.partner_id.id,
+    #             'property_sale_id': rec.id,
+    #             'project_id': rec.project_id.id if rec.project_id else False,
+    #             'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
+    #             'order_line': [(0, 0, {
+    #                 'name': rec.name or "Property Sale",
+    #                 'product_id': product_id,
+    #                 'price_unit': rec.sale_price,
+    #                 'product_uom_qty': 1,
+    #             })]
+    #         })
+    #
+    #         rec.write({
+    #             'sale_order_id': sale_order.id,
+    #             'is_sale_order_created': True,
+    #         })
+    #
+    #         rec.sale_order_id = sale_order.id
+    #
+    #         return {
+    #             'name': "Sale Order",
+    #             'type': 'ir.actions.act_window',
+    #             'res_model': 'sale.order',
+    #             'view_mode': 'form',
+    #             'res_id': sale_order.id,
+    #         }
+
+
+    # def action_create_sale_order(self):
+    #     """
+    #     Create a linked Sale Order for this Property Sale.
+    #     Ensures the property has a product and the customer is set.
+    #     """
+    #     # نستخدم ensure_one لأن الوظيفة تعيد واجهة عرض (View) واحدة في النهاية
+    #     self.ensure_one()
+    #
+    #     for rec in self:
+    #         if rec.sale_order_id:
+    #             raise ValidationError(_("A Sale Order already exists for this record."))
+    #
+    #         if not rec.partner_id:
+    #             raise ValidationError(_("Please select a customer before creating a Sale Order."))
+    #
+    #         product_id = rec.property_id.product_id.id if rec.property_id and rec.property_id.product_id else False
+    #         if not product_id:
+    #             raise ValidationError(_("The property does not have a linked product for the Sale Order."))
+    #
+    #         # دمج منطق إنشاء أمر البيع مع إضافة خطة الدفع
+    #         sale_order_vals = {
+    #             'partner_id': rec.partner_id.id,
+    #             'property_sale_id': rec.id,
+    #             'project_id': rec.project_id.id if rec.project_id else False,
+    #             # هنا تم دمج منطق خطة الدفع: إذا كانت موجودة يتم إرسالها لأمر البيع
+    #             'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
+    #             'order_line': [(0, 0, {
+    #                 'name': rec.name or "Property Sale",
+    #                 'product_id': product_id,
+    #                 'price_unit': rec.sale_price,
+    #                 'product_uom_qty': 1,
+    #             })]
+    #         }
+    #
+    #         sale_order = self.env['sale.order'].create(sale_order_vals)
+    #
+    #         # تحديث سجل البيع العقاري بربطه بأمر البيع الجديد
+    #         rec.write({
+    #             'sale_order_id': sale_order.id,
+    #             'is_sale_order_created': True,
+    #         })
+    #
+    #         # إرجاع واجهة أمر البيع لفتحه مباشرة للمستخدم
+    #         return {
+    #             'name': _("Sale Order"),
+    #             'type': 'ir.actions.act_window',
+    #             'res_model': 'sale.order',
+    #             'view_mode': 'form',
+    #             'res_id': sale_order.id,
+    #             'target': 'current',
+    #         }
+
     def action_create_sale_order(self):
         """
         Create a linked Sale Order for this Property Sale.
         Ensures the property has a product and the customer is set.
         """
+        self.ensure_one()
 
         for rec in self:
             if rec.sale_order_id:
@@ -328,9 +427,11 @@ class PropertySale(models.Model):
             if not product_id:
                 raise ValidationError(_("The property does not have a linked product for the Sale Order."))
 
+            # 1. إنشاء أمر البيع مع ربط كافة البيانات المطلوبة
             sale_order = self.env['sale.order'].create({
                 'partner_id': rec.partner_id.id,
                 'property_sale_id': rec.id,
+                'property_id': rec.property_id.id, # ربط العقار ضروري لتوليد الأقساط
                 'project_id': rec.project_id.id if rec.project_id else False,
                 'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
                 'order_line': [(0, 0, {
@@ -341,20 +442,26 @@ class PropertySale(models.Model):
                 })]
             })
 
+            # 2. استدعاء وظيفة توليد الأقساط يدوياً
+            # تم تغيير الاسم إلى _onchange_payment_plan بناءً على الكود المرفق
+            if sale_order.payment_id:
+                sale_order._onchange_payment_plan()
+
+            # 3. تحديث سجل البيع العقاري
             rec.write({
                 'sale_order_id': sale_order.id,
                 'is_sale_order_created': True,
             })
 
-            rec.sale_order_id = sale_order.id
-
             return {
-                'name': "Sale Order",
+                'name': _("Sale Order"),
                 'type': 'ir.actions.act_window',
                 'res_model': 'sale.order',
                 'view_mode': 'form',
                 'res_id': sale_order.id,
+                'target': 'current',
             }
+
 
     def action_view_sale_order(self):
         """Open the linked Sale Order"""

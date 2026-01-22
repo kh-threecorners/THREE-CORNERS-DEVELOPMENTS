@@ -26,6 +26,7 @@ class AccountMove(models.Model):
         string="Late Fee Percentage",
         default=0.0,
         copy=False,
+        tracking=True,
     )
 
     is_late_fee_applied = fields.Boolean(
@@ -34,106 +35,73 @@ class AccountMove(models.Model):
         copy=False,
         readonly=True
     )
-
-
-    #
-    # @api.model
-    # def _process_late_fee_invoices(self):
-    #     """
-    #     هذه الدالة يتم استدعاؤها بواسطة Cron Job للبحث عن الفواتير المتأخرة
-    #     وتطبيق غرامة التأخير عليها.
-    #     """
-    #     _logger.info("بدء مهمة التحقق من غرامات التأخير...")
-    #
-    #     # ابحث عن منتج الغرامة. يجب أن يكون موجوداً ومُعداً بشكل صحيح.
-    #     late_fee_product = self.env['product.product'].search([('default_code', '=', 'LATE_FEE')], limit=1)
-    #     if not late_fee_product:
-    #         _logger.error("منتج غرامة التأخير (LATE_FEE) غير موجود. يرجى إنشائه أولاً.")
-    #         return
-    #
-    #     # جلب الفواتير المستحقة التي لم تطبق عليها الغرامة بعد
-    #     overdue_invoices = self.search([
-    #         ('move_type', '=', 'out_invoice'),
-    #         ('state', '=', 'posted'),
-    #         ('invoice_date_due', '<', fields.Date.context_today(self)),
-    #         ('late_fee_percentage', '>', 0),
-    #         ('is_late_fee_applied', '=', False),
-    #         ('payment_state', 'in', ['not_paid', 'partial'])
-    #     ])
-    #
-    #     if not overdue_invoices:
-    #         _logger.info("لا توجد فواتير متأخرة لتطبيق الغرامة عليها.")
-    #         return
-    #
-    #     for invoice in overdue_invoices:
-    #         # --- هذا هو السطر الذي تم تعديله ---
-    #         # حساب قيمة الغرامة بقسمة النسبة على 100 أولاً
-    #         fee_amount = invoice.amount_total * (invoice.late_fee_percentage / 100.0)
-    #         # ------------------------------------
-    #
-    #         if fee_amount <= 0:
-    #             continue
-    #
-    #         # تحويل الفاتورة إلى وضع المسودة لإضافة السطر
-    #         invoice.button_draft()
-    #
-    #         # إضافة سطر الغرامة
-    #         self.env['account.move.line'].create({
-    #             'move_id': invoice.id,
-    #             'product_id': late_fee_product.id,
-    #             'name': f"غرامة تأخير للفاتورة {invoice.name}",
-    #             'quantity': 1,
-    #             'price_unit': fee_amount,
-    #         })
-    #
-    #         # تحديث حقل "تم تطبيق الغرامة" لمنع إضافتها مرة أخرى
-    #         invoice.write({'is_late_fee_applied': True})
-    #
-    #         # إعادة ترحيل الفاتورة
-    #         invoice.action_post()
-    #         _logger.info(f"تم تطبيق غرامة بقيمة {fee_amount} على الفاتورة {invoice.name}")
-    #
-    #     _logger.info("انتهاء مهمة التحقق من غرامات التأخير.")
-
+    late_fee_move_line_id = fields.Many2one(
+        'account.move.line',
+        string='Late Fee Line',
+        readonly=True,
+        copy=False
+    )
 
     @api.model
     def _process_late_fee_invoices(self):
-        late_fee_product = self.env['product.product'].search([('default_code', '=', 'LATE_FEE')], limit=1)
+        late_fee_product = self.env['product.product'].search(
+            [('default_code', '=', 'LATE_FEE')], limit=1
+        )
         if not late_fee_product:
             _logger.error("منتج غرامة التأخير (LATE_FEE) غير موجود. يرجى إنشائه أولاً.")
             return
+
         overdue_invoices = self.search([
             ('move_type', '=', 'out_invoice'),
-            ('state', '=', 'posted'),
+            ('state', '=', 'draft'),
             ('invoice_date_due', '<', fields.Date.context_today(self)),
-            ('late_fee_percentage', '>', 0),
             ('is_late_fee_applied', '=', False),
-            ('payment_state', 'in', ['not_paid', 'partial'])
         ])
 
         if not overdue_invoices:
-            _logger.info("لا توجد فواتير متأخرة لتطبيق الغرامة عليها.")
+            _logger.info("لا توجد فواتير Draft متأخرة لتطبيق الغرامة عليها.")
             return
 
         for invoice in overdue_invoices:
             fee_amount = invoice.amount_total * (invoice.late_fee_percentage / 100.0)
 
-            if fee_amount <= 0:
-                continue
+            price_for_line = fee_amount if fee_amount > 0 else late_fee_product.list_price
 
-            invoice.button_draft()
-            self.env['account.move.line'].create({
+            fee_line = self.env['account.move.line'].create({
                 'move_id': invoice.id,
                 'product_id': late_fee_product.id,
-                'name': f"غرامة تأخير للفاتورة {invoice.name}",
+                'name': f"Late fee for invoice {invoice.name or ''}",
                 'quantity': 1,
-                'price_unit': fee_amount,
+                'price_unit': price_for_line,
             })
-            invoice.write({'is_late_fee_applied': True})
-            invoice.action_post()
-            _logger.info(f"تم تطبيق غرامة بقيمة {fee_amount} على الفاتورة {invoice.name}")
 
-        _logger.info("انتهاء مهمة التحقق من غرامات التأخير.")
+            invoice.write({
+                'is_late_fee_applied': True,
+                'late_fee_move_line_id': fee_line.id,
+            })
+
+            _logger.info(
+                f"تم إضافة/تحديث غرامة على الفاتورة Draft {invoice.name} بسعر {price_for_line}"
+            )
+
+        _logger.info("انتهاء مهمة تطبيق غرامات التأخير على فواتير Draft.")
+
+    @api.onchange('late_fee_percentage')
+    def _onchange_late_fee_percentage(self):
+
+        if self.move_type == 'out_invoice' and self.late_fee_move_line_id:
+
+            if self.late_fee_percentage > 0:
+                base_amount = sum(
+                    line.price_subtotal for line in self.invoice_line_ids if line.id != self.late_fee_move_line_id.id)
+
+                new_fee_amount = base_amount * (self.late_fee_percentage / 100.0)
+
+                if new_fee_amount > 0:
+                    self.late_fee_move_line_id.price_unit = new_fee_amount
+            else:
+                self.late_fee_move_line_id.price_unit = self.late_fee_move_line_id.product_id.list_price
+
 
     #
     # @api.model_create_multi
