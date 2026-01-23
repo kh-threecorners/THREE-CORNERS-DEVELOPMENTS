@@ -26,6 +26,7 @@ class ProductProduct(models.Model):
         }
 
     def action_view_property(self):
+        """زر سابق لفتح أول عقار مرتبط"""
         self.ensure_one()
         prop = self.env['property.property'].search([('product_id', '=', self.id)], limit=1)
         if not prop:

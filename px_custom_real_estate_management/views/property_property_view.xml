@@ -53,8 +53,8 @@
                 <field name="reservation_duration_hours"/>
                 <field name="temp_reserved_until"/>
                 <field name="selected_payment_plan_id" domain="[('state', '=', 'published')]"/>
-                <field name="maintenance" widget="percentage"/>
-                <field name="maintenance_value" />
+<!--                <field name="maintenance" widget="percentage"/>-->
+<!--                <field name="maintenance_value" />-->
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Installments">

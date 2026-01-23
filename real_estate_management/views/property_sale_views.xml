@@ -89,7 +89,7 @@
                         <group>
                             <field name="sale_price" groups="real_estate_management.property_sale_sale_price_approval"/>
                             <field name="sale_price" readonly="1" groups="!real_estate_management.property_sale_sale_price_approval"/>
-                            <field name="discount" widget="percent"/>
+<!--                            <field name="discount" widget="percent"/>-->
                             <field name="price_after_discount"/>
                         </group>
                     </group>
@@ -107,7 +107,7 @@
                             <field name="commission_plan_id"/>
                             <field name="commission_type"/>
                             <field name="commission"/>
-                            <field name="sales_person"/>
+                            <field name="sales_person" invisible="1"/>
                             <field name="sales_manager"/>
                         </group>
                     </group>

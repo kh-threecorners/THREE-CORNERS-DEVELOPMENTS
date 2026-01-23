@@ -1,64 +1,165 @@
 <odoo>
     <data>
-        <template id="report_payment_receipt_document_hide_total" inherit_id="account.report_payment_receipt_document">
-            <xpath expr="//div[@class='mb-4 mt-3']" position="replace">
-            </xpath>
-            <xpath expr="//table[@name='invoices']" position="replace">
-                <div style="border: 2px solid #333; padding: 20px; margin-top: 25px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+        <template id="report_payment_receipt_document_custom" inherit_id="account.report_payment_receipt_document">
+            <xpath expr="//div[@class='page']" position="replace">
+                <div class="page">
+                    <t t-set="is_arabic" t-value="o.partner_id.lang and o.partner_id.lang.startswith('ar')"/>
+                    <style>
+                        .receipt-container {
+                        border: 2px solid #333;
+                        padding: 25px;
+                        margin-top: 10px;
+                        background-color: #ffffff;
+                        border-radius: 10px;
+                        font-family: 'DejaVu Sans', sans-serif;
+                        }
+                        .rtl { direction: rtl; text-align: right; }
+                        .ltr { direction: ltr; text-align: left; }
+                        .receipt-header {
+                        text-align: center;
+                        margin-bottom: 25px;
+                        padding-bottom: 10px;
+                        border-bottom: 4px double #333;
+                        }
+                        .receipt-header h2 {
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        margin: 0;
+                        color: #333;
+                        font-size: 22px;
+                        }
+                        .data-section { width: 100%; margin-bottom: 20px; }
+                        .section-title {
+                        color: #007bff;
+                        font-size: 17px;
+                        border-bottom: 2px solid #007bff;
+                        padding-bottom: 6px;
+                        margin-bottom: 15px;
+                        font-weight: bold;
+                        }
+                        .info-row {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        padding: 10px 0;
+                        border-bottom: 1px dotted #ccc;
+                        font-size: 14px;
+                        }
+                        .rtl .info-row { flex-direction: row-reverse; }
+                        .info-row:last-child { border-bottom: none; }
+                        .footer-sig {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 40px; /* تقليل المسافة */
+                        text-align: center;
+                        }
+                        .rtl .footer-sig { flex-direction: row-reverse; }
+                        .sig-item { width: 30%; }
+                        .sig-line { border-top: 1px dashed #999; margin-top: 5px; }
+                        .label-text { font-weight: bold; color: #555; white-space: nowrap; }
+                        .ltr .label-text { margin-right: 15px; }
+                        .rtl .label-text { margin-left: 15px; }
+                        .value-text { color: #000; flex-grow: 1; }
+                        .ltr .value-text { text-align: right; }
+                        .rtl .value-text { text-align: left; }
+                        .amount-words { font-style: italic; color: #333; font-weight: 500; }
+                    </style>
 
-                    <h2 style="text-align: center; margin-top: 0; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 4px double #333; color: #333; font-weight: 700; text-transform: uppercase;">
-                        <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">إيصال دفع رسمي</t>
-                        <t t-else="">Official Payment Receipt</t>
-                    </h2>
+                    <div t-attf-class="receipt-container #{'rtl' if is_arabic else 'ltr'}">
 
-                    <div style="width: 100%; overflow: hidden;">
+                        <!-- Header -->
+                        <div class="receipt-header">
+                            <h2>
+                                <t t-if="is_arabic">إيصال دفع رسمي</t>
+                                <t t-else="">Official Payment Receipt</t>
+                            </h2>
+                        </div>
 
-                        <div style="width: 48%; float: left; padding-right: 15px; border-right: 1px solid #ddd;">
-                            <h4 style="margin-top: 0; margin-bottom: 15px; color: #007bff; font-size: 18px; border-bottom: 1px solid #007bff; padding-bottom: 5px;">
-                                <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">معلومات الدفع</t>
-                                <t t-else="">Payment Information</t>
+                        <!-- Payment Details -->
+                        <div class="data-section">
+                            <h4 class="section-title">
+                                <t t-if="is_arabic">تفاصيل الدفع</t>
+                                <t t-else="">Payment Details</t>
                             </h4>
 
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">الشريك</t><t t-else="">Partner</t></strong>
-                                <span style="float: right;"><t t-esc="o.partner_id.name or 'None'"/></span>
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">اسم العميل</t><t t-else="">Customer</t></span>
+                                <span class="value-text"><t t-esc="o.partner_id.name"/></span>
                             </div>
 
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">المبلغ</t><t t-else="">Amount</t></strong>
-                                <span style="float: right;"><t t-esc="o.amount or 'None'"/></span>
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">مرجع الدفع</t><t t-else="">Payment Reference</t></span>
+                                <span class="value-text"><t t-esc="o.payment_reference or o.name"/></span>
                             </div>
 
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">مرجع الدفع</t><t t-else="">Payment Reference</t></strong>
-                                <span style="float: right;"><t t-esc="o.payment_reference or 'None'"/></span>
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">التاريخ</t><t t-else="">Date</t></span>
+                                <span class="value-text" t-field="o.date"/>
                             </div>
+
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">طريقة الدفع</t><t t-else="">Payment By</t></span>
+                                <span class="value-text"><t t-esc="o.journal_id.name"/></span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">المبلغ</t><t t-else="">Amount</t></span>
+                                <span class="value-text" t-field="o.amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="label-text"><t t-if="is_arabic">المبلغ بالحروف</t><t t-else="">Amount in Words</t></span>
+                                <span class="value-text amount-words"><t t-esc="o.currency_id.amount_to_text(o.amount)"/></span>
+                            </div>
+
+                            <!-- Cheque Details -->
+                            <!-- Cheque Number -->
+                            <div class="info-row" t-if="o.cheque_payment_number">
+                                <span class="label-text"><t t-if="is_arabic">رقم الشيك</t><t t-else="">Cheque Number</t></span>
+                                <span class="value-text"><t t-esc="o.cheque_payment_number"/></span>
+                            </div>
+
+                            <!-- Cheque Bank -->
+                            <div class="info-row" t-if="o.customer_payment_cheque_bank_id">
+                                <span class="label-text"><t t-if="is_arabic">بنك الشيك</t><t t-else="">Cheque Bank</t></span>
+                                <span class="value-text"><t t-esc="o.customer_payment_cheque_bank_id.name"/></span>
+                            </div>
+
+                            <!-- Cheque Due Date -->
+                            <div class="info-row" t-if="o.cheque_payment_due_date">
+                                <span class="label-text"><t t-if="is_arabic">تاريخ استحقاق الشيك</t><t t-else="">Cheque Due Date</t></span>
+                                <span class="value-text" t-field="o.cheque_payment_due_date"/>
+                            </div>
+
 
                         </div>
 
-                        <div style="width: 48%; float: right; padding-left: 15px;">
-                            <h4 style="margin-top: 0; margin-bottom: 15px; color: #007bff; font-size: 18px; border-bottom: 1px solid #007bff; padding-bottom: 5px;">
-                                <t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">معلومات الشيك</t>
-                                <t t-else="">Cheque Information</t>
-                            </h4>
-
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">رقم الشيك</t><t t-else="">Cheque Number</t></strong>
-                                <span style="float: right;"><t t-esc="o.cheque_payment_number or 'None'"/></span>
+                        <!-- Signatures -->
+                        <div class="row footer-sig">
+                            <!-- Paid By -->
+                            <div class="col-5 sig-item">
+                                <small>
+                                    <t t-if="is_arabic">دفع بواسطة</t>
+                                    <t t-else="">Paid By</t>
+                                </small>
+                                <div style="height: 20px;"></div>
+                                <div class="sig-line"></div>
                             </div>
 
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; border-bottom: 1px dotted #ccc; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">بنك الشيك</t><t t-else="">Cheque Bank</t></strong>
-                                <span style="float: right;"><t t-esc="o.customer_payment_cheque_bank_id.name or 'None'"/></span>
-                            </div>
+                            <!-- Space between signatures -->
+                            <div class="col-2"></div>
 
-                            <div style="width: 100%; overflow: hidden; padding: 8px 0; font-size: 14px;">
-                                <strong style="float: left;"><t t-if="o.partner_id.lang and o.partner_id.lang.startswith('ar')">تاريخ استحقاق الشيك</t><t t-else="">Cheque Due Date</t></strong>
-                                <span style="float: right;"><t t-esc="o.cheque_payment_due_date or 'None'"/></span>
+                            <!-- Received By -->
+                            <div class="col-5 sig-item">
+                                <small>
+                                    <t t-if="is_arabic">استلم بواسطة</t>
+                                    <t t-else="">Received By</t>
+                                </small>
+                                <div style="height: 20px;"></div>
+                                <div class="sig-line"></div>
                             </div>
                         </div>
 
-                        <div style="clear: both;"></div>
 
                     </div>
                 </div>

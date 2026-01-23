@@ -14,12 +14,8 @@ class PropertySale(models.Model):
         string="Payment Plan",
         help="Select a payment plan for this sale"
     )
-    property_sale_line_ids = fields.One2many(
-        'property.sale.line',
-        'sale_id',
-        string="Installments"
-    )
     partner_nationality = fields.Char(string='Nationality')
+
 
     partner_street = fields.Char(string='Street')
     partner_street2 = fields.Char(string='Street 2')
@@ -28,13 +24,110 @@ class PropertySale(models.Model):
     contact_code = fields.Char(string='Contact Code')
     partner_city = fields.Char(string='City')
     partner_state_id = fields.Char(string='State')
-    partner_country_id = fields.Many2one("res.country", string='Country')
+    partner_country_id = fields.Many2one("res.country",string='Country')
     partner_email = fields.Char(string="Email")
     partner_phone = fields.Char(string="Phone")
     partner_mobile = fields.Char(string="Mobile")
     id_number = fields.Char(string="Id Number")
+
+    property_sale_line_ids = fields.One2many(
+        'property.sale.line',
+        'sale_id',
+        string="Installments"
+    )
     sale_order_id = fields.Many2one("sale.order", string="Sale Order", readonly=True)
     invoice_id = fields.Many2one("account.move", string="Invoice", readonly=True)
+    is_sale_order_created = fields.Boolean(string="Sale Order Created", default=False)
+    is_payment_created = fields.Boolean(string="Payment Created", default=False)
+
+    payment_id = fields.Many2one(
+        'account.payment',
+        string='Payment',
+        readonly=True
+    )
+
+    internal_sales_person_id = fields.Many2one('res.partner', string="Sales Person ")
+    internal_commission_plan_id = fields.Many2one('property.commission', string="Commission Plan")
+    internal_commission_type = fields.Char(compute='_compute_internal_commission', store=True, string="Commission Type")
+    internal_commission = fields.Monetary(string='Commission', compute='_compute_internal_commission', store=True)
+
+    external_broker_id = fields.Many2one(
+        'res.partner',
+        string="Broker",
+        domain="[('is_broker', '=', True)]",
+        help="The external broker for this property sale"
+    )
+    external_commission_plan_id = fields.Many2one(
+        'property.commission',
+        string="Commission Plan",
+        help="Select the Commission Plan for the external broker"
+    )
+    external_commission_type = fields.Char(
+        compute='_compute_external_commission',
+        string="Commission Type",
+        store=True
+    )
+    external_commission = fields.Monetary(
+        string='Commission',
+        compute='_compute_external_commission',
+        store=True
+    )
+
+
+    @api.depends('external_commission_plan_id', 'sale_price')
+    def _compute_external_commission(self):
+        """Calculate external broker commission based on commission plan and sale price"""
+        for rec in self:
+            if rec.external_commission_plan_id and rec.sale_price > 0:
+                rec.external_commission_type = rec.external_commission_plan_id.commission_type
+                if rec.external_commission_plan_id.commission_type == 'fixed':
+                    rec.external_commission = rec.external_commission_plan_id.commission
+                else:  # percentage
+                    rec.external_commission = (rec.sale_price * rec.external_commission_plan_id.commission) / 100
+            else:
+                rec.external_commission_type = ''
+                rec.external_commission = 0.0
+
+
+    def action_external_commission_invoice(self):
+        for rec in self:
+            if not rec.external_broker_id:
+                raise ValidationError(_("No external broker selected."))
+
+            if not rec.external_commission or rec.external_commission <= 0:
+                raise ValidationError(_("External commission amount is missing or zero."))
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'in_invoice',
+                'partner_id': rec.external_broker_id.id,
+                'invoice_date': fields.Date.today(),
+                'invoice_line_ids': [(0, 0, {
+                    'name': f'External Broker Commission for {rec.name}',
+                    'price_unit': rec.external_commission,
+                    'quantity': 1,
+                })]
+            })
+
+            return {
+                'name': _('External Broker Invoice'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.move',
+                'view_mode': 'form',
+                'res_id': invoice.id,
+            }
+
+    @api.depends('internal_commission_plan_id', 'sale_price')
+    def _compute_internal_commission(self):
+        for rec in self:
+            if rec.internal_commission_plan_id and rec.sale_price > 0:
+                rec.internal_commission_type = rec.internal_commission_plan_id.commission_type
+                if rec.internal_commission_plan_id.commission_type == 'fixed':
+                    rec.internal_commission = rec.internal_commission_plan_id.commission
+                else:
+                    rec.internal_commission = (rec.sale_price * rec.internal_commission_plan_id.commission) / 100
+            else:
+                rec.internal_commission_type = ''
+                rec.internal_commission = 0.0
 
     def action_broker_commission_invoice(self):
         for rec in self:
@@ -63,10 +156,53 @@ class PropertySale(models.Model):
                 'res_id': invoice.id,
             }
 
+    def action_internal_commission_invoice(self):
+        for rec in self:
+            if not rec.internal_sales_person_id:
+                raise ValidationError(_("No internal sales person selected."))
+
+            if not rec.internal_commission or rec.internal_commission <= 0:
+                raise ValidationError(_("Internal commission amount is missing or zero."))
+
+            partner = rec.internal_sales_person_id
+            if not partner:
+                raise ValidationError(_("The selected internal sales person does not have a related partner record."))
+
+            invoice = self.env['account.move'].create({
+                'move_type': 'in_invoice',
+
+                'partner_id': partner.id,
+
+                'invoice_date': fields.Date.today(),
+                'invoice_line_ids': [(0, 0, {
+                    'name': f'Internal Commission for {rec.name}',
+
+                    # 5. استخدام مبلغ عمولة الشخص الجديد
+                    'price_unit': rec.internal_commission,
+
+                    'quantity': 1,
+                })]
+            })
+
+            return {
+                'name': _('Internal Commission Invoice'),
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.move',
+                'view_mode': 'form',
+                'res_id': invoice.id,
+            }
+
     def action_cancel(self):
         """Cancel sale and reset property to available if needed"""
         for rec in self:
             rec.state = "cancel"
+            if rec.property_id:
+                rec.property_id.state = "available"
+
+    # def action_cancel(self):
+    #     """Cancel sale and reset property to available if needed"""
+    #     for rec in self:
+    #         rec.state = "cancel"
 
     def action_draft(self):
         for rec in self:
@@ -175,11 +311,110 @@ class PropertySale(models.Model):
 
             rec.property_sale_line_ids = lines
 
+    # def action_create_sale_order(self):
+    #     """
+    #     Create a linked Sale Order for this Property Sale.
+    #     Ensures the property has a product and the customer is set.
+    #     """
+    #
+    #     for rec in self:
+    #         if rec.sale_order_id:
+    #             raise ValidationError(_("A Sale Order already exists for this record."))
+    #
+    #         if not rec.partner_id:
+    #             raise ValidationError(_("Please select a customer before creating a Sale Order."))
+    #
+    #         product_id = rec.property_id.product_id.id if rec.property_id and rec.property_id.product_id else False
+    #         if not product_id:
+    #             raise ValidationError(_("The property does not have a linked product for the Sale Order."))
+    #
+    #         sale_order = self.env['sale.order'].create({
+    #             'partner_id': rec.partner_id.id,
+    #             'property_sale_id': rec.id,
+    #             'project_id': rec.project_id.id if rec.project_id else False,
+    #             'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
+    #             'order_line': [(0, 0, {
+    #                 'name': rec.name or "Property Sale",
+    #                 'product_id': product_id,
+    #                 'price_unit': rec.sale_price,
+    #                 'product_uom_qty': 1,
+    #             })]
+    #         })
+    #
+    #         rec.write({
+    #             'sale_order_id': sale_order.id,
+    #             'is_sale_order_created': True,
+    #         })
+    #
+    #         rec.sale_order_id = sale_order.id
+    #
+    #         return {
+    #             'name': "Sale Order",
+    #             'type': 'ir.actions.act_window',
+    #             'res_model': 'sale.order',
+    #             'view_mode': 'form',
+    #             'res_id': sale_order.id,
+    #         }
+
+
+    # def action_create_sale_order(self):
+    #     """
+    #     Create a linked Sale Order for this Property Sale.
+    #     Ensures the property has a product and the customer is set.
+    #     """
+    #     # نستخدم ensure_one لأن الوظيفة تعيد واجهة عرض (View) واحدة في النهاية
+    #     self.ensure_one()
+    #
+    #     for rec in self:
+    #         if rec.sale_order_id:
+    #             raise ValidationError(_("A Sale Order already exists for this record."))
+    #
+    #         if not rec.partner_id:
+    #             raise ValidationError(_("Please select a customer before creating a Sale Order."))
+    #
+    #         product_id = rec.property_id.product_id.id if rec.property_id and rec.property_id.product_id else False
+    #         if not product_id:
+    #             raise ValidationError(_("The property does not have a linked product for the Sale Order."))
+    #
+    #         # دمج منطق إنشاء أمر البيع مع إضافة خطة الدفع
+    #         sale_order_vals = {
+    #             'partner_id': rec.partner_id.id,
+    #             'property_sale_id': rec.id,
+    #             'project_id': rec.project_id.id if rec.project_id else False,
+    #             # هنا تم دمج منطق خطة الدفع: إذا كانت موجودة يتم إرسالها لأمر البيع
+    #             'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
+    #             'order_line': [(0, 0, {
+    #                 'name': rec.name or "Property Sale",
+    #                 'product_id': product_id,
+    #                 'price_unit': rec.sale_price,
+    #                 'product_uom_qty': 1,
+    #             })]
+    #         }
+    #
+    #         sale_order = self.env['sale.order'].create(sale_order_vals)
+    #
+    #         # تحديث سجل البيع العقاري بربطه بأمر البيع الجديد
+    #         rec.write({
+    #             'sale_order_id': sale_order.id,
+    #             'is_sale_order_created': True,
+    #         })
+    #
+    #         # إرجاع واجهة أمر البيع لفتحه مباشرة للمستخدم
+    #         return {
+    #             'name': _("Sale Order"),
+    #             'type': 'ir.actions.act_window',
+    #             'res_model': 'sale.order',
+    #             'view_mode': 'form',
+    #             'res_id': sale_order.id,
+    #             'target': 'current',
+    #         }
+
     def action_create_sale_order(self):
         """
         Create a linked Sale Order for this Property Sale.
         Ensures the property has a product and the customer is set.
         """
+        self.ensure_one()
 
         for rec in self:
             if rec.sale_order_id:
@@ -192,10 +427,13 @@ class PropertySale(models.Model):
             if not product_id:
                 raise ValidationError(_("The property does not have a linked product for the Sale Order."))
 
+            # 1. إنشاء أمر البيع مع ربط كافة البيانات المطلوبة
             sale_order = self.env['sale.order'].create({
                 'partner_id': rec.partner_id.id,
                 'property_sale_id': rec.id,
+                'property_id': rec.property_id.id, # ربط العقار ضروري لتوليد الأقساط
                 'project_id': rec.project_id.id if rec.project_id else False,
+                'payment_id': rec.payment_plan_id.id if rec.payment_plan_id else False,
                 'order_line': [(0, 0, {
                     'name': rec.name or "Property Sale",
                     'product_id': product_id,
@@ -204,15 +442,26 @@ class PropertySale(models.Model):
                 })]
             })
 
-            rec.sale_order_id = sale_order.id
+            # 2. استدعاء وظيفة توليد الأقساط يدوياً
+            # تم تغيير الاسم إلى _onchange_payment_plan بناءً على الكود المرفق
+            if sale_order.payment_id:
+                sale_order._onchange_payment_plan()
+
+            # 3. تحديث سجل البيع العقاري
+            rec.write({
+                'sale_order_id': sale_order.id,
+                'is_sale_order_created': True,
+            })
 
             return {
-                'name': "Sale Order",
+                'name': _("Sale Order"),
                 'type': 'ir.actions.act_window',
                 'res_model': 'sale.order',
                 'view_mode': 'form',
                 'res_id': sale_order.id,
+                'target': 'current',
             }
+
 
     def action_view_sale_order(self):
         """Open the linked Sale Order"""
@@ -290,6 +539,10 @@ class PropertySale(models.Model):
                 'payment_method_id': self.env.ref('account.account_payment_method_manual_in').id,
                 'journal_id': self.env['account.journal'].search([('type', '=', 'bank')], limit=1).id,
             })
+            rec.write({
+                'payment_id': payment.id,
+                'is_payment_created': True,
+            })
 
         return {
             'type': 'ir.actions.act_window',
@@ -297,6 +550,20 @@ class PropertySale(models.Model):
             'res_model': 'account.payment',
             'view_mode': 'form',
             'res_id': payment.id,
+        }
+
+    def action_view_payment(self):
+        self.ensure_one()
+        if not self.payment_id:
+            return False
+
+        return {
+            'name': _('Payment'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'view_mode': 'form',
+            'res_id': self.payment_id.id,
+            'target': 'current',
         }
 
 
@@ -319,3 +586,6 @@ class PropertySaleLine(models.Model):
     )
     collection_amount = fields.Float(string="Collected Amount")
     collection_date = fields.Date(string="Collection Date")
+
+
+

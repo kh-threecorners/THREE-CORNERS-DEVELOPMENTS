@@ -17,9 +17,19 @@
                         class="btn-primary"
                         invisible="not broker_id"/>
 
+                <button name="action_internal_commission_invoice"
+                        type="object"
+                        string="Sales Person Invoice"
+                        class="btn-primary"
+                        invisible="not internal_sales_person_id"/>
+                <button name="action_external_commission_invoice"
+                        type="object"
+                        string="External Broker Invoice"
+                        class="btn-primary"
+                        invisible="not external_broker_id"/>
                 <button name="action_cancel" type="object" string="Cancel"
                         class="btn-secondary"
-                        invisible="state not in ['proposed']"
+                        invisible="state not in ['proposed', 'confirm']"
                         groups="real_estate_management.booking_sale_approval"/>
                 <button name="action_draft" type="object" string="Reset To Draft"
                         class="btn-primary"
@@ -29,46 +39,107 @@
                 <button name="action_create_sale_order"
                         type="object"
                         string="Create Sale Order"
-                        invisible="state != 'confirm'"
+                        invisible="state != 'confirm' or is_sale_order_created"
                         class="btn-primary"/>
 
-<!--                <button name="action_create_invoice"-->
-<!--                        type="object"-->
-<!--                        string="Create Invoice"-->
-<!--                        invisible="state != 'draft'"-->
-<!--                        class="btn-secondary"/>-->
+                <!--                <button name="action_create_invoice"-->
+                <!--                        type="object"-->
+                <!--                        string="Create Invoice"-->
+                <!--                        invisible="state != 'draft'"-->
+                <!--                        class="btn-secondary"/>-->
                 <button name="action_create_downpayment"
                         type="object"
                         string="Create Down Payment"
-                        invisible="state != 'confirm'"
+                        invisible="state != 'confirm' or is_payment_created"
                         class="btn-secondary"/>
 
             </header>
-<!--            <xpath expr="//sheet" position="inside">-->
-<!--                <div name="oe_button_box">-->
-<!--                    <button name="action_view_sale_order"-->
-<!--                            type="object"-->
-<!--                            string="Sale Order"-->
-<!--                            class="oe_stat_button"-->
-<!--                            icon="fa-shopping-cart"-->
-<!--                            invisible="not sale_order_id"/>-->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <!--                <div name="oe_button_box">-->
+                <button name="action_view_payment"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-money">
+                    <field name="payment_id" widget="statinfo" string="Payment"/>
+                </button>
+                <!--                    <button name="action_view_invoice"-->
+                <!--                            type="object"-->
+                <!--                            string="Invoice"-->
+                <!--                            class="oe_stat_button"-->
+                <!--                            icon="fa-file-invoice"-->
+                <!--                            invisible="not invoice_id"/>-->
+                <!--                </div>-->
+            </xpath>
+            <!--            <xpath expr="//group[field[@name='any_broker']]" position="after">-->
+            <!--                <group string="External Broker Commission">-->
+            <!--                    <group>-->
+            <!--                        <field name="external_broker_id"/>-->
+            <!--                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>-->
+            <!--                    </group>-->
+            <!--                    <group>-->
+            <!--                        <field name="external_commission_type" invisible="not external_broker_id"/>-->
+            <!--                        <field name="external_commission" invisible="not external_broker_id"/>-->
+            <!--                    </group>-->
+            <!--                </group>-->
+            <!--                <group string="Internal Commission Details">-->
+            <!--                    <group>-->
+            <!--                        <field name="internal_sales_person_id"/>-->
+            <!--                        <field name="internal_commission_plan_id" invisible="not internal_sales_person_id"/>-->
+            <!--                    </group>-->
+            <!--                    <group>-->
+            <!--                        <field name="internal_commission_type" invisible="not internal_sales_person_id"/>-->
+            <!--                        <field name="internal_commission" invisible="not internal_sales_person_id"/>-->
+            <!--                    </group>-->
+            <!--                </group>-->
+            <!--            </xpath>-->
 
-<!--                    <button name="action_view_invoice"-->
-<!--                            type="object"-->
-<!--                            string="Invoice"-->
-<!--                            class="oe_stat_button"-->
-<!--                            icon="fa-file-invoice"-->
-<!--                            invisible="not invoice_id"/>-->
-<!--                </div>-->
-<!--            </xpath>-->
+            <xpath expr="//sheet/group[2]"  position="after">
+                <group string="Internal Commission">
+                    <group>
+                        <field name="internal_sales_person_id"/>
+                        <field name="internal_commission_plan_id" invisible="not internal_sales_person_id"/>
+                    </group>
+                    <group>
+                        <field name="internal_commission_type" invisible="not internal_sales_person_id"/>
+                        <field name="internal_commission" invisible="not internal_sales_person_id"/>
+                    </group>
+                </group>
+<!--                <group string="External Broker Commission">-->
+<!--                    <group>-->
+<!--                        <field name="external_broker_id"/>-->
+<!--                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>-->
+<!--                    </group>-->
+<!--                    <group>-->
+<!--                        <field name="external_commission_type" invisible="not external_broker_id"/>-->
+<!--                        <field name="external_commission" invisible="not external_broker_id"/>-->
+<!--                    </group>-->
+<!--                </group>-->
+            </xpath>
+            <xpath expr="//group[field[@name='any_broker']]" position="after">
+                    <group>
+                        <field name="external_broker_id"/>
+                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>
+                    </group>
+                    <group>
+                        <field name="external_commission_type" invisible="not external_broker_id"/>
+                        <field name="external_commission" invisible="not external_broker_id"/>
+                    </group>
+            </xpath>
             <xpath expr="//field[@name='property_id']" position="after">
                 <field name="reservation_duration_hours"/>
                 <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
+<!--                <field name="price_after_discount"/>-->
             </xpath>
             <xpath expr="//field[@name='broker_id']" position="attributes">
                 <attribute name="domain">[('is_broker', '=', True)]</attribute>
             </xpath>
             <xpath expr="//field[@name='paid']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='sales_person']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='sales_manager']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='remaining']" position="attributes">
@@ -77,10 +148,16 @@
             <xpath expr="//field[@name='payment_method']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <xpath expr="//field[@name='discount']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
             <xpath expr="//field[@name='reservation_date']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='completion_date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='price_after_discount']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//group[field[@name='commission_plan_id']]" position="after">

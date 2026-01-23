@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil.relativedelta import relativedelta  # Import relativedelta
+from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -50,6 +50,8 @@ class PaymentPlan(models.Model):
         string="Annual Installments Count",
         default=0,
      )
+    maintenance_percentage = fields.Float(string="Maintenance %", default=0.0)
+    is_maintenance_in_middle = fields.Boolean(string="Maintenance in Middle", default=True)
 
     @api.depends('unit_price', 'discount')
     def _compute_price_after_discount(self):
@@ -100,7 +102,6 @@ class PaymentPlan(models.Model):
     def generate_installment_lines_button(self):
         for record in self:
             print("=== Generating Installments for Payment Plan:", record.name, "===")
-            # مسح الأسطر القديمة
             record.installment_line_ids = [(5, 0, 0)]
 
             if not record.payment_duration or not record.payment_start_date:
@@ -113,7 +114,6 @@ class PaymentPlan(models.Model):
 
             lines = []
 
-            # الأقساط الدورية (شهري، ربع سنوي، نصف سنوي)
             if record.no_of_installments > 0 and record.amount_per_installment > 0:
                 interval_months = {
                     'monthly': 1,
@@ -132,27 +132,23 @@ class PaymentPlan(models.Model):
 
                 print("Number of periodic installments:", len(lines))
 
-            # الأقساط السنوية
             if record.annual_payment_percentage > 0:
                 total_annual_amount = record.price_after_discount * (record.annual_payment_percentage / 100.0)
                 if total_annual_amount > 0:
-                    # استخدام عدد الأقساط السنوية المحدد أو القيمة الافتراضية
                     annual_count = record.annual_installments_count if record.annual_installments_count > 0 else record.payment_duration
                     print("Annual Count used:", annual_count)
                     for i in range(1, annual_count + 1):
                         due_date = record.payment_start_date + relativedelta(years=i)
                         lines.append({
                             'due_date': due_date,
-                            'amount': total_annual_amount / annual_count,  # تقسيم المبلغ على عدد الأقساط
+                            'amount': total_annual_amount / annual_count,
                             'type': 'annual',
                         })
                         print(
                             f"Annual installment {i}: Due Date = {due_date}, Amount = {total_annual_amount / annual_count}")
 
-            # ترتيب الأسطر حسب التاريخ
             lines.sort(key=lambda x: x['due_date'])
 
-            # إضافة الرقم التسلسلي ووضعها في One2many
             final_lines = []
             for i, line in enumerate(lines, 1):
                 final_lines.append((0, 0, {
@@ -166,56 +162,6 @@ class PaymentPlan(models.Model):
             print("Total Installments Generated:", len(final_lines))
             record.installment_line_ids = final_lines
         return True
-
-    # def generate_installment_lines_button(self):
-    #     for record in self:
-    #         record.installment_line_ids = [(5, 0, 0)]
-    #
-    #         if not record.payment_duration or not record.payment_start_date:
-    #             raise ValidationError(_("Please set the Payment Duration and Start Date before generating lines."))
-    #
-    #         lines = []
-    #
-    #         if record.no_of_installments > 0 and record.amount_per_installment > 0:
-    #             interval_months = {
-    #                 'monthly': 1,
-    #                 'quarterly': 3,
-    #                 'semi_annually': 6
-    #             }.get(record.payment_frequency, 1)
-    #
-    #             current_date = record.payment_start_date
-    #             for i in range(1, record.no_of_installments + 1):
-    #                 current_date += relativedelta(months=interval_months)
-    #                 lines.append({
-    #                     'due_date': current_date,
-    #                     'amount': record.amount_per_installment,
-    #                     'type': 'periodic',
-    #                 })
-    #
-    #         if record.annual_payment_percentage > 0:
-    #             annual_amount = record.price_after_discount * (record.annual_payment_percentage / 100.0)
-    #             if annual_amount > 0:
-    #                 for i in range(1, record.payment_duration + 1):
-    #                     lines.append({
-    #                         'due_date': record.payment_start_date + relativedelta(years=i),
-    #                         'amount': annual_amount,
-    #                         'type': 'annual',
-    #                     })
-    #
-    #         lines.sort(key=lambda x: x['due_date'])
-    #
-    #         final_lines = []
-    #         for i, line in enumerate(lines, 1):
-    #             final_lines.append((0, 0, {
-    #                 'sequence': i,
-    #                 'name': f"{line['type'].capitalize()} Installment {i}",
-    #                 'due_date': line['due_date'],
-    #                 'amount': line['amount'],
-    #                 'type': line['type'],
-    #             }))
-    #
-    #         record.installment_line_ids = final_lines
-    #     return True
 
 
 class PaymentInstallmentLine(models.Model):
