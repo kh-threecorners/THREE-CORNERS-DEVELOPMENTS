@@ -104,31 +104,43 @@
                         <field name="internal_commission" invisible="not internal_sales_person_id"/>
                     </group>
                 </group>
-<!--                <group string="External Broker Commission">-->
-<!--                    <group>-->
-<!--                        <field name="external_broker_id"/>-->
-<!--                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>-->
-<!--                    </group>-->
-<!--                    <group>-->
-<!--                        <field name="external_commission_type" invisible="not external_broker_id"/>-->
-<!--                        <field name="external_commission" invisible="not external_broker_id"/>-->
-<!--                    </group>-->
-<!--                </group>-->
+                <!--                <group string="External Broker Commission">-->
+                <!--                    <group>-->
+                <!--                        <field name="external_broker_id"/>-->
+                <!--                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>-->
+                <!--                    </group>-->
+                <!--                    <group>-->
+                <!--                        <field name="external_commission_type" invisible="not external_broker_id"/>-->
+                <!--                        <field name="external_commission" invisible="not external_broker_id"/>-->
+                <!--                    </group>-->
+                <!--                </group>-->
             </xpath>
-            <xpath expr="//group[field[@name='any_broker']]" position="after">
-                    <group>
-                        <field name="external_broker_id"/>
-                        <field name="external_commission_plan_id" invisible="not external_broker_id"/>
-                    </group>
-                    <group>
-                        <field name="external_commission_type" invisible="not external_broker_id"/>
-                        <field name="external_commission" invisible="not external_broker_id"/>
-                    </group>
+            <xpath expr="//group[field[@name='any_broker']]" position="replace">
+                <group>
+                    <field name="external_broker_id"/>
+                    <field name="external_commission_plan_id" invisible="not external_broker_id"/>
+                    <field name="external_commission_type" invisible="not external_broker_id"/>
+                    <field name="external_commission" invisible="not external_broker_id"/>
+                </group>
+                <group>
+                    <field name="any_broker"/>
+                    <field invisible="not any_broker" name="broker_id"/>
+                    <field name="paid"/>
+                    <field name="remaining"/>
+                    <field name="payment_method"/>
+                    <field name="reservation_date"/>
+                    <field name="completion_date"/>
+                    <field name="commission_plan_id" invisible="not any_broker"/>
+                    <field name="commission_type" invisible="not any_broker"/>
+                    <field name="commission" invisible="not any_broker"/>
+                    <field name="sales_person" invisible="1"/>
+                    <field name="sales_manager" invisible="not any_broker"/>
+                </group>
             </xpath>
             <xpath expr="//field[@name='property_id']" position="after">
                 <field name="reservation_duration_hours"/>
                 <field name="payment_plan_id" domain="[('state', '=', 'published')]"/>
-<!--                <field name="price_after_discount"/>-->
+                <!--                <field name="price_after_discount"/>-->
             </xpath>
             <xpath expr="//field[@name='broker_id']" position="attributes">
                 <attribute name="domain">[('is_broker', '=', True)]</attribute>
