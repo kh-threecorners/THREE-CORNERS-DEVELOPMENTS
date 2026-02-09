@@ -52,6 +52,10 @@ class PaymentPlan(models.Model):
      )
     maintenance_percentage = fields.Float(string="Maintenance %", default=0.0)
     is_maintenance_in_middle = fields.Boolean(string="Maintenance in Middle", default=True)
+    maintenance_after_months = fields.Integer(
+        string="Maintenance After (Months)",
+        help="Number of months after Sale Order date to create maintenance installment"
+    )
 
     @api.depends('unit_price', 'discount')
     def _compute_price_after_discount(self):

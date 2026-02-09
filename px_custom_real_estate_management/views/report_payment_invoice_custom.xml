@@ -107,7 +107,7 @@
                                 <span class="value-text" t-field="o.amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                             </div>
                             <div class="info-row" >
-                                <span class="label-text"><t t-if="is_arabic">Memo</t><t t-else="">Memo</t></span>
+                                <span class="label-text"><t t-if="is_arabic">الوصف</t><t t-else="">Memo</t></span>
                                 <span class="value-text"><t t-esc="o.memo"/></span>
                             </div>
 
