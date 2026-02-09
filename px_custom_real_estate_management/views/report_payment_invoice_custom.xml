@@ -106,13 +106,16 @@
                                 <span class="label-text"><t t-if="is_arabic">المبلغ</t><t t-else="">Amount</t></span>
                                 <span class="value-text" t-field="o.amount" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                             </div>
+                            <div class="info-row" >
+                                <span class="label-text"><t t-if="is_arabic">الوصف</t><t t-else="">Memo</t></span>
+                                <span class="value-text"><t t-esc="o.memo"/></span>
+                            </div>
 
                             <div class="info-row">
                                 <span class="label-text"><t t-if="is_arabic">المبلغ بالحروف</t><t t-else="">Amount in Words</t></span>
                                 <span class="value-text amount-words"><t t-esc="o.currency_id.amount_to_text(o.amount)"/></span>
                             </div>
 
-                            <!-- Cheque Details -->
                             <!-- Cheque Number -->
                             <div class="info-row" t-if="o.cheque_payment_number">
                                 <span class="label-text"><t t-if="is_arabic">رقم الشيك</t><t t-else="">Cheque Number</t></span>

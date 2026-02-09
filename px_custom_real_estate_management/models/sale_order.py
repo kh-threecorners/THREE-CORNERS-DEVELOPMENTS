@@ -1,5 +1,7 @@
 from odoo import models, api, _, fields
 from dateutil.relativedelta import relativedelta
+from odoo.exceptions import ValidationError
+
 
 
 class SaleOrder(models.Model):
@@ -23,9 +25,13 @@ class SaleOrder(models.Model):
         string="SO Installment Invoices",
         compute="_compute_so_installment_invoice_count"
     )
+    maintenance_date = fields.Date(
+        string="Maintenance Date",
+        help="Date of maintenance installment"
+    )
     property_maintenance_value = fields.Float(string="Maintenance Value",
-        related="property_id.maintenance_value",
-        store=True,)
+                                              related="property_id.maintenance_value",
+                                              store=True,)
     property_sale_id = fields.Many2one('property.sale', string="Property Sale")
     @api.depends('installment_line_ids')
     def _compute_so_installment_invoice_count(self):
@@ -60,7 +66,7 @@ class SaleOrder(models.Model):
                 order._onchange_payment_plan()
         return res
 
-    @api.onchange('property_id', 'payment_id')
+    @api.onchange('property_id', 'payment_id', 'maintenance_date')
     def _onchange_payment_plan(self):
         for order in self:
             print("\n===================== Onchange Triggered =====================")
@@ -74,7 +80,7 @@ class SaleOrder(models.Model):
                 continue
 
             plan = order.payment_id
-            # السعر اللي الحساب عليه الأقساط على أساس Unit Price
+            start_date = order.date_order.date() if order.date_order else fields.Date.context_today(order)
             total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
 
             if not total_amount:
@@ -99,7 +105,8 @@ class SaleOrder(models.Model):
 
             lines = []
             seq = 1
-            current_date = plan.payment_start_date
+            # current_date = plan.payment_start_date
+            current_date = start_date
             uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
 
             # 1. إضافة الدفعة المقدمة
@@ -110,7 +117,8 @@ class SaleOrder(models.Model):
                     'capital_repayment': down_payment,
                     'remaining_capital': remaining_after_down,
                     'collection_status': 'not_due',
-                    'collection_date': plan.payment_start_date,
+                    'collection_date': start_date,
+                    # 'collection_date': plan.payment_start_date,
                     'uom_id': uom_id,
                 }))
                 seq += 1
@@ -139,45 +147,82 @@ class SaleOrder(models.Model):
                         'capital_repayment': annual_total_amount / annual_count,
                         'remaining_capital': remaining_after_down - ((i * annual_total_amount) / annual_count),
                         'collection_status': 'not_due',
-                        'collection_date': plan.payment_start_date + relativedelta(years=i),
+                        # 'collection_date': plan.payment_start_date + relativedelta(years=i),
+                        'collection_date': start_date + relativedelta(years=i),
                         'uom_id': uom_id,
                     }))
                     seq += 1
 
-            # 4. إضافة قسط الصيانة في منتصف المدة (التعديل الجديد)
-            # ملاحظة: تأكد من إضافة حقل maintenance_percentage في موديل payment.plane
-            maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) if hasattr(plan,
-                                                                                                'maintenance_percentage') else 0.0
+            # maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) \
+            #     if hasattr(plan, 'maintenance_percentage') else 0.0
+            #
+            # if maintenance_value > 0:
+            #     if not order.maintenance_date:
+            #         raise ValidationError("Please set Maintenance Date in Sale Order")
+            #
+            #     lines.append((0, 0, {
+            #         'sequence': 0,  # سيتم تحديثه بعدين
+            #         'name': 'Maintenance Installment',
+            #         'capital_repayment': maintenance_value,
+            #         'remaining_capital': 0.0,
+            #         'collection_status': 'not_due',
+            #         'collection_date': order.maintenance_date,
+            #         'uom_id': uom_id,
+            #     }))
+
+
+                #####################################################
+
+            # maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) \
+            #     if hasattr(plan,
+            #                'maintenance_percentage') else 0.0
+            #
+            # if maintenance_value > 0:
+            #     if lines:
+            #         middle_index = len(lines) // 2
+            #         target_date = lines[middle_index][2]['collection_date']
+            #
+            #         lines.insert(middle_index, (0, 0, {
+            #             'sequence': 0,
+            #             'name': 'Maintenance Installment',
+            #             'capital_repayment': maintenance_value,
+            #             'remaining_capital': 0.0,
+            #             'collection_status': 'not_due',
+            #             'collection_date': target_date,
+            #             'uom_id': uom_id,
+            #         }))
+            #     else:
+            #         lines.append((0, 0, {
+            #             'sequence': 1,
+            #             'name': 'Maintenance Installment',
+            #             'capital_repayment': maintenance_value,
+            #             'remaining_capital': 0.0,
+            #             'collection_status': 'not_due',
+            #             # 'collection_date': plan.payment_start_date,
+            #             'collection_date': start_date,
+            #             'uom_id': uom_id,
+            #         }))
+            #
+            # for i, line in enumerate(lines):
+            #     line[2]['sequence'] = i + 1
+
+            maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) \
+                if hasattr(plan, 'maintenance_percentage') else 0.0
 
             if maintenance_value > 0:
-                # حساب نقطة المنتصف بناءً على عدد الأقساط التي تم إنشاؤها حتى الآن
-                if lines:
-                    middle_index = len(lines) // 2
-                    # نأخذ تاريخ القسط الذي سيسبقه في الترتيب
-                    target_date = lines[middle_index][2]['collection_date']
+                maintenance_months = plan.maintenance_after_months or 0
+                maintenance_date = start_date + relativedelta(months=maintenance_months)
 
-                    lines.insert(middle_index, (0, 0, {
-                        'sequence': 0,  # سيتم تحديثه في الخطوة التالية
-                        'name': 'Maintenance Installment',
-                        'capital_repayment': maintenance_value,
-                        'remaining_capital': 0.0,
-                        'collection_status': 'not_due',
-                        'collection_date': target_date,
-                        'uom_id': uom_id,
-                    }))
-                else:
-                    # في حال عدم وجود أقساط أخرى، يوضع في البداية
-                    lines.append((0, 0, {
-                        'sequence': 1,
-                        'name': 'Maintenance Installment',
-                        'capital_repayment': maintenance_value,
-                        'remaining_capital': 0.0,
-                        'collection_status': 'not_due',
-                        'collection_date': plan.payment_start_date,
-                        'uom_id': uom_id,
-                    }))
+                lines.append((0, 0, {
+                    'sequence': 0,
+                    'name': 'Maintenance Installment',
+                    'capital_repayment': maintenance_value,
+                    'remaining_capital': 0.0,
+                    'collection_status': 'not_due',
+                    'collection_date': maintenance_date,
+                    'uom_id': uom_id,
+                }))
 
-            # 5. إعادة ترتيب التسلسل (Sequence) لضمان الترتيب الصحيح بعد الإدراج في المنتصف
             for i, line in enumerate(lines):
                 line[2]['sequence'] = i + 1
 
@@ -330,9 +375,65 @@ class SaleOrder(models.Model):
             order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
 
 
+    # def action_create_installment_invoices_from_so(self):
+    #     AccountMove = self.env['account.move']
+    #     created_invoices = AccountMove
+    #
+    #     for order in self:
+    #         print("➡️ Creating installment invoices for:", order.name)
+    #         if not order.installment_line_ids:
+    #             print("⚠️ No installment lines for this order")
+    #             continue
+    #
+    #         order_invoices = AccountMove
+    #         for line in order.installment_line_ids:
+    #             if line.collection_status == 'collected':
+    #                 print(f"⏭️ Skipping collected line: {line.name}")
+    #                 continue
+    #
+    #             invoice_vals = order._prepare_invoice() or {}
+    #             invoice_vals.update({
+    #                 'move_type': 'out_invoice',
+    #                 'invoice_date': line.collection_date or fields.Date.today(),
+    #                 'sale_order_id': order.id,
+    #                 'sale_order_installment_id': line.id,
+    #                 'invoice_line_ids': [(0, 0, {
+    #                     'product_id': order.order_line[0].product_id.id if order.order_line else False,
+    #                     'quantity': 1,
+    #                     'price_unit': line.capital_repayment,
+    #                     'name': line.name,
+    #                     'product_uom_id': line.uom_id.id if line.uom_id else False,
+    #                 })],
+    #             })
+    #
+    #             print("📝 Creating invoice with values:", invoice_vals)
+    #             invoice = AccountMove.create(invoice_vals)
+    #             order_invoices |= invoice
+    #             print("✅ Created Invoice ID:", invoice.id, "for line:", line.name)
+    #
+    #         if order_invoices:
+    #             order.installment_invoice_created = True
+    #             created_invoices |= order_invoices
+    #             print("💾 Updated order as having created installment invoices")
+    #
+    #     print("🎯 Total invoices created:", len(created_invoices))
+    #     return {
+    #         'type': 'ir.actions.act_window',
+    #         'name': 'SO Installment Invoices',
+    #         'res_model': 'account.move',
+    #         'view_mode': 'list,form',
+    #         'domain': [('id', 'in', created_invoices.ids)],
+    #     }
+
     def action_create_installment_invoices_from_so(self):
+        """Create invoices for each installment of the Sale Order."""
         AccountMove = self.env['account.move']
         created_invoices = AccountMove
+
+        # جلب الحساب المحاسبي الخاص بالدفعات المقدمة
+        down_payment_account = self.env['account.account'].search(
+            [('name', '=', 'دفعات حجز من العملاء')], limit=1
+        )
 
         for order in self:
             print("➡️ Creating installment invoices for:", order.name)
@@ -341,24 +442,34 @@ class SaleOrder(models.Model):
                 continue
 
             order_invoices = AccountMove
+
             for line in order.installment_line_ids:
                 if line.collection_status == 'collected':
                     print(f"⏭️ Skipping collected line: {line.name}")
                     continue
 
+                # تحضير قيم الفاتورة
                 invoice_vals = order._prepare_invoice() or {}
+
+                # تحضير سطر الفاتورة
+                invoice_line_vals = {
+                    'product_id': order.order_line[0].product_id.id if order.order_line else False,
+                    'quantity': 1,
+                    'price_unit': line.capital_repayment,
+                    'name': line.name,
+                    'product_uom_id': line.uom_id.id if line.uom_id else False,
+                }
+
+                # إذا القسط دفعة مقدمة استخدم الحساب المحدد
+                if line.name == 'Down Payment' and down_payment_account:
+                    invoice_line_vals['account_id'] = down_payment_account.id
+
                 invoice_vals.update({
                     'move_type': 'out_invoice',
                     'invoice_date': line.collection_date or fields.Date.today(),
                     'sale_order_id': order.id,
                     'sale_order_installment_id': line.id,
-                    'invoice_line_ids': [(0, 0, {
-                        'product_id': order.order_line[0].product_id.id if order.order_line else False,
-                        'quantity': 1,
-                        'price_unit': line.capital_repayment,
-                        'name': line.name,
-                        'product_uom_id': line.uom_id.id if line.uom_id else False,
-                    })],
+                    'invoice_line_ids': [(0, 0, invoice_line_vals)],
                 })
 
                 print("📝 Creating invoice with values:", invoice_vals)
@@ -489,4 +600,5 @@ class ProductTemplate(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
 

@@ -36,6 +36,7 @@
                 <field name="installment_invoice_exist" invisible="1"/>
 <!--                <field name="property_id"/>-->
                 <field name="payment_id" domain="[('state', '=', 'published')]"/>
+<!--                <field name="maintenance_date"/>-->
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Installments" invisible="not payment_id">
