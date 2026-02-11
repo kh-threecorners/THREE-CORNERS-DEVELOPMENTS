@@ -1,5 +1,5 @@
 from datetime import datetime
-from dateutil.relativedelta import relativedelta  # Import relativedelta
+from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -154,7 +154,7 @@ class PaymentInstallmentLine(models.Model):
     sequence = fields.Integer(string='Seq.')
     name = fields.Char(string='Description')
     amount = fields.Float(string='Amount')
-    due_date = fields.Date(string="Due Date")  ## NEW ##
+    due_date = fields.Date(string="Due Date")
     type = fields.Selection([('annual', 'Annual'), ('periodic', 'Periodic')], string="Type")
 
 

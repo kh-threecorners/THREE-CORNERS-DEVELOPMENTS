@@ -109,7 +109,6 @@ class SaleOrder(models.Model):
             current_date = start_date
             uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
 
-            # 1. إضافة الدفعة المقدمة
             if down_payment > 0:
                 lines.append((0, 0, {
                     'sequence': seq,
@@ -123,7 +122,6 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            # 2. توليد الأقساط الدورية
             interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
             for i in range(1, no_of_periodic_installments + 1):
                 current_date += relativedelta(months=interval_months)
@@ -138,7 +136,6 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            # 3. إضافة الأقساط السنوية
             if annual_count > 0:
                 for i in range(1, annual_count + 1):
                     lines.append((0, 0, {
@@ -161,7 +158,7 @@ class SaleOrder(models.Model):
             #         raise ValidationError("Please set Maintenance Date in Sale Order")
             #
             #     lines.append((0, 0, {
-            #         'sequence': 0,  # سيتم تحديثه بعدين
+            #         'sequence': 0,
             #         'name': 'Maintenance Installment',
             #         'capital_repayment': maintenance_value,
             #         'remaining_capital': 0.0,
@@ -251,7 +248,6 @@ class SaleOrder(models.Model):
     #         plan = order.payment_id
     #         # total_amount = sum(line.price_subtotal for line in order.order_line)
     #         # total_amount = sum(line.price_subtotal for line in order.order_line)
-    #         # السعر اللي الحساب عليه الأقساط على أساس Unit Price
     #         total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
     #
     #         if not total_amount:
@@ -430,7 +426,6 @@ class SaleOrder(models.Model):
         AccountMove = self.env['account.move']
         created_invoices = AccountMove
 
-        # جلب الحساب المحاسبي الخاص بالدفعات المقدمة
         down_payment_account = self.env['account.account'].search(
             [('name', '=', 'دفعات حجز من العملاء')], limit=1
         )
@@ -448,10 +443,8 @@ class SaleOrder(models.Model):
                     print(f"⏭️ Skipping collected line: {line.name}")
                     continue
 
-                # تحضير قيم الفاتورة
                 invoice_vals = order._prepare_invoice() or {}
 
-                # تحضير سطر الفاتورة
                 invoice_line_vals = {
                     'product_id': order.order_line[0].product_id.id if order.order_line else False,
                     'quantity': 1,
@@ -460,7 +453,6 @@ class SaleOrder(models.Model):
                     'product_uom_id': line.uom_id.id if line.uom_id else False,
                 }
 
-                # إذا القسط دفعة مقدمة استخدم الحساب المحدد
                 if line.name == 'Down Payment' and down_payment_account:
                     invoice_line_vals['account_id'] = down_payment_account.id
 

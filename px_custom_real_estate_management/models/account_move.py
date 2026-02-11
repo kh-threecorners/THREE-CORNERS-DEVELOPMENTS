@@ -103,6 +103,20 @@ class AccountMove(models.Model):
                 self.late_fee_move_line_id.price_unit = self.late_fee_move_line_id.product_id.list_price
 
 
+    def action_register_payment(self):
+        action = super().action_register_payment()
+
+        if self.is_cheque:
+            action['context'].update({
+                'default_is_cheque_payment': True,
+                'default_cheque_payment_number': self.cheque_number,
+                'default_customer_payment_cheque_bank_id': self.customer_cheque_bank_id.id,
+                'default_cheque_payment_due_date': self.cheque_due_date,
+            })
+
+        return action
+
+
     #
     # @api.model_create_multi
     # def create(self, vals_list):
