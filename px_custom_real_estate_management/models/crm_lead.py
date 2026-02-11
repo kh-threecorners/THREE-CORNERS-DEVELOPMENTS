@@ -23,7 +23,7 @@ class CrmLead(models.Model):
             if lead.property_id:
                 lead.other_opportunity_count = self.env['crm.lead'].search_count([
                     ('property_id', '=', lead.property_id.id),
-                    ('id', '!=', lead.id)  # يستبعد نفسه
+                    ('id', '!=', lead.id)
                 ])
             else:
                 lead.other_opportunity_count = 0
@@ -101,7 +101,6 @@ class CrmLead(models.Model):
         current_date = plan.payment_start_date
         seq = 0
 
-        # Down payment
         if down_payment > 0:
             lines.append((0, 0, {
                 'serial_number': seq,
@@ -115,7 +114,6 @@ class CrmLead(models.Model):
 
         interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
 
-        # Periodic installments
         for i in range(1, no_of_installments + 1):
             current_date += relativedelta(months=interval_months)
             lines.append((0, 0, {
@@ -128,7 +126,6 @@ class CrmLead(models.Model):
             }))
             seq += 1
 
-        # Annual installments
         if plan.annual_payment_percentage > 0:
             for i in range(1, plan.payment_duration + 1):
                 lines.append((0, 0, {
@@ -141,7 +138,6 @@ class CrmLead(models.Model):
                 }))
                 seq += 1
 
-        # ✅ Add Maintenance installment (if any)
         if property_rec.maintenance_value and property_rec.maintenance_value > 0:
             last_date = lines[-1][2]['collection_date'] if lines else plan.payment_start_date
             lines.append((0, 0, {

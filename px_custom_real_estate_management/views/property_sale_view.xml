@@ -62,6 +62,12 @@
                         icon="fa-money">
                     <field name="payment_id" widget="statinfo" string="Payment"/>
                 </button>
+                <button name="action_view_sale_order"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shopping-cart">
+                    <field name="sale_order_id" widget="statinfo" string="Sale Order"/>
+                </button>
                 <!--                    <button name="action_view_invoice"-->
                 <!--                            type="object"-->
                 <!--                            string="Invoice"-->
