@@ -1,0 +1,22 @@
+<!--##############################################################################-->
+<!--#    Copyright (C) 2023.-->
+<!--#    Author: Eng.Mohamed Reda Mahfouz (<mohamed.reda741@gmail.com>)-->
+<!--#-->
+<!--#-->
+<!--#    It is forbidden to publish, distribute, sublicense, or sell copies-->
+<!--#    of the Software or modified copies of the Software.-->
+<!--##############################################################################-->
+<odoo>
+  <data>
+    <record id="account_updates_account_payment_form" model="ir.ui.view">
+            <field name="name">acount.updates.account.payment.form</field>
+            <field name="model">account.payment</field>
+            <field name="inherit_id" ref="account.view_account_payment_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='date']" position="after">
+                    <field name="destination_account_id"/>
+                </xpath>
+            </field>
+        </record>
+  </data>
+</odoo>
