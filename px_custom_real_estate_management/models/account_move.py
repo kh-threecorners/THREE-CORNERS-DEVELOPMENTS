@@ -245,3 +245,68 @@ class AccountPayment(models.Model):
                 }
                 payment.move_id.write(move_vals)
         return res
+
+
+
+class AccountPaymentRegister(models.TransientModel):
+    _inherit = 'account.payment.register'
+
+    is_cheque_payment = fields.Boolean(string="Is Cheque")
+    cheque_payment_number = fields.Char(string="Cheque Number")
+    customer_payment_cheque_bank_id = fields.Many2one(
+        'bank.tag',
+        string="Customer Cheque Bank"
+    )
+    cheque_payment_due_date = fields.Date(string="Cheque Due Date")
+
+    @api.model
+    def default_get(self, fields_list):
+        _logger.info("🔵 default_get اتنادت في account.payment.register")
+        _logger.info("Context بالكامل: %s", self.env.context)
+
+        res = super().default_get(fields_list)
+
+        _logger.info("القيم بعد super(): %s", res)
+
+        if self.env.context.get('default_is_cheque_payment'):
+            _logger.info("🟢 فيه بيانات شيك جاية من الفاتورة")
+
+            res.update({
+                'is_cheque_payment': self.env.context.get('default_is_cheque_payment'),
+                'cheque_payment_number': self.env.context.get('default_cheque_payment_number'),
+                'customer_payment_cheque_bank_id': self.env.context.get('default_customer_payment_cheque_bank_id'),
+                'cheque_payment_due_date': self.env.context.get('default_cheque_payment_due_date'),
+            })
+
+            _logger.info("القيم بعد التحديث: %s", res)
+
+        else:
+            _logger.info("🔴 مفيش بيانات شيك في الـ context")
+
+        return res
+
+    def _create_payments(self):
+        _logger.info("🟣 تم استدعاء _create_payments")
+        _logger.info("القيم في الـ wizard قبل إنشاء الدفع:")
+        _logger.info("is_cheque_payment: %s", self.is_cheque_payment)
+        _logger.info("cheque_payment_number: %s", self.cheque_payment_number)
+        _logger.info("bank_id: %s", self.customer_payment_cheque_bank_id.id)
+        _logger.info("due_date: %s", self.cheque_payment_due_date)
+
+        payments = super()._create_payments()
+
+        _logger.info("🟢 تم إنشاء payments: %s", payments.ids)
+
+        for payment in payments:
+            _logger.info("🔄 جاري تحديث payment ID: %s", payment.id)
+
+            payment.write({
+                'is_cheque_payment': self.is_cheque_payment,
+                'cheque_payment_number': self.cheque_payment_number,
+                'customer_payment_cheque_bank_id': self.customer_payment_cheque_bank_id.id,
+                'cheque_payment_due_date': self.cheque_payment_due_date,
+            })
+
+            _logger.info("✅ تم تحديث payment ID %s ببيانات الشيك", payment.id)
+
+        return payments
