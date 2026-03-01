@@ -203,7 +203,8 @@ class SaleOrder(models.Model):
             # for i, line in enumerate(lines):
             #     line[2]['sequence'] = i + 1
 
-            maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) \
+            # maintenance_value = total_amount * (plan.maintenance_percentage / 100.0) \
+            maintenance_value = discounted_price * (plan.maintenance_percentage / 100.0) \
                 if hasattr(plan, 'maintenance_percentage') else 0.0
 
             if maintenance_value > 0:
