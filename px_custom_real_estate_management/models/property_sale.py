@@ -17,6 +17,13 @@ class PropertySale(models.Model):
     partner_nationality = fields.Char(string='Nationality')
 
 
+
+    discount_amount = fields.Monetary(string="Discount Amount", store=True, compute='_compute_financials')
+    maintenance_booking_percentage = fields.Float(store=True, string="Maintenance %", default=0.0, compute='_compute_financials')
+    price_after_dis = fields.Monetary(string="Price After Discount", store=True, compute='_compute_financials')
+    price_after_payment = fields.Monetary(string="Price After Payment", store=True, compute='_compute_financials')
+
+
     partner_street = fields.Char(string='Street')
     partner_street2 = fields.Char(string='Street 2')
     partner_zip = fields.Char(string='Zip')
@@ -73,6 +80,21 @@ class PropertySale(models.Model):
         store=True
     )
 
+    @api.depends('sale_price', 'maintenance_booking_percentage', 'paid')
+    def _compute_financials(self):
+        for rec in self:
+            sale_price = rec.sale_price or 0.0
+            discount_pct = rec.maintenance_booking_percentage or 0.0
+            paid_amount = rec.paid or 0.0
+
+            # حساب الخصم
+            rec.discount_amount = sale_price * (discount_pct / 100.0)
+
+            # السعر بعد الخصم
+            rec.price_after_dis = sale_price - rec.discount_amount
+
+            # السعر بعد الدفعة
+            rec.price_after_payment = rec.price_after_dis - paid_amount
 
     @api.depends('external_commission_plan_id', 'sale_price')
     def _compute_external_commission(self):
@@ -208,7 +230,6 @@ class PropertySale(models.Model):
         for rec in self:
             rec.state = "draft"
 
-
     @api.model
     def create(self, vals_list):
         records = []
@@ -218,17 +239,62 @@ class PropertySale(models.Model):
                 raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
 
             rec = super(PropertySale, self).create(vals)
+
+            # تعيين نسبة الخصم من خطة الدفع إذا موجودة
+            if rec.payment_plan_id:
+                rec.maintenance_booking_percentage = rec.payment_plan_id.discount or 0.0
+
+            # ضمان وجود قيمة sale_price و paid قبل الحساب
+            if not rec.sale_price:
+                rec.sale_price = 0.0
+            if not rec.paid:
+                rec.paid = 0.0
+
+            rec._compute_financials()
             records.append(rec)
 
         return records[0] if len(records) == 1 else records
 
     def write(self, vals):
-        """Prevent changing to a sold property in write"""
         if vals.get("property_id"):
             property_id = self.env["property.property"].browse(vals["property_id"])
             if property_id and property_id.state == "sold":
                 raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
-        return super(PropertySale, self).write(vals)
+
+        res = super(PropertySale, self).write(vals)
+
+        for rec in self:
+            # إعادة حساب الخصم بعد تعديل sale_price, paid أو خطة الدفع
+            if 'payment_plan_id' in vals or 'sale_price' in vals or 'paid' in vals:
+                if rec.payment_plan_id:
+                    rec.maintenance_booking_percentage = rec.payment_plan_id.discount or 0.0
+                if not rec.sale_price:
+                    rec.sale_price = 0.0
+                if not rec.paid:
+                    rec.paid = 0.0
+                rec._compute_financials()
+
+        return res
+    # @api.model
+    # def create(self, vals_list):
+    #     records = []
+    #     for vals in vals_list:
+    #         property_id = self.env["property.property"].browse(vals.get("property_id"))
+    #         if property_id and property_id.state == "sold":
+    #             raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
+    #
+    #         rec = super(PropertySale, self).create(vals)
+    #         records.append(rec)
+    #
+    #     return records[0] if len(records) == 1 else records
+    #
+    # def write(self, vals):
+    #     """Prevent changing to a sold property in write"""
+    #     if vals.get("property_id"):
+    #         property_id = self.env["property.property"].browse(vals["property_id"])
+    #         if property_id and property_id.state == "sold":
+    #             raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
+    #     return super(PropertySale, self).write(vals)
 
 
     def action_temp_reserve_property(self):
@@ -241,8 +307,9 @@ class PropertySale(models.Model):
         for rec in self:
             rec.property_sale_line_ids = [(5, 0, 0)]
             if not rec.payment_plan_id:
+                rec.maintenance_booking_percentage = 0.0
                 continue
-
+            rec.maintenance_booking_percentage = rec.payment_plan_id.discount or 0.0
             plan = rec.payment_plan_id
 
             discount_amount = rec.sale_price * (plan.discount / 100.0)

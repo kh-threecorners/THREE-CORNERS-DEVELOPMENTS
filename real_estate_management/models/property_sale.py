@@ -172,13 +172,13 @@ class PropertySale(models.Model):
     #         discount_amount = (rec.sale_price * rec.discount) / 100
     #         rec.price_after_discount = rec.sale_price - discount_amount
 
-    @api.onchange('price_after_discount', 'sale_price')
-    def _onchange_discount(self):
-        for rec in self:
-            if rec.sale_price > 0:
-                rec.discount = round((rec.sale_price - rec.price_after_discount) / rec.sale_price * 100, 2)
-            else:
-                rec.discount = 0
+    # @api.onchange('price_after_discount', 'sale_price')
+    # def _onchange_discount(self):
+    #     for rec in self:
+    #         if rec.sale_price > 0:
+    #             rec.discount = round((rec.sale_price - rec.price_after_discount) / rec.sale_price * 100, 2)
+    #         else:
+    #             rec.discount = 0
 
     @api.model
     def create(self, vals_list):
