@@ -87,25 +87,22 @@ class PropertySale(models.Model):
             discount_pct = rec.maintenance_booking_percentage or 0.0
             paid_amount = rec.paid or 0.0
 
-            # حساب الخصم
             rec.discount_amount = sale_price * (discount_pct / 100.0)
 
-            # السعر بعد الخصم
             rec.price_after_dis = sale_price - rec.discount_amount
 
-            # السعر بعد الدفعة
             rec.price_after_payment = rec.price_after_dis - paid_amount
 
-    @api.depends('external_commission_plan_id', 'sale_price')
+    @api.depends('external_commission_plan_id', 'price_after_dis')
     def _compute_external_commission(self):
         """Calculate external broker commission based on commission plan and sale price"""
         for rec in self:
-            if rec.external_commission_plan_id and rec.sale_price > 0:
+            if rec.external_commission_plan_id and rec.price_after_dis > 0:
                 rec.external_commission_type = rec.external_commission_plan_id.commission_type
                 if rec.external_commission_plan_id.commission_type == 'fixed':
                     rec.external_commission = rec.external_commission_plan_id.commission
                 else:  # percentage
-                    rec.external_commission = (rec.sale_price * rec.external_commission_plan_id.commission) / 100
+                    rec.external_commission = (rec.price_after_dis * rec.external_commission_plan_id.commission) / 100
             else:
                 rec.external_commission_type = ''
                 rec.external_commission = 0.0
@@ -138,15 +135,15 @@ class PropertySale(models.Model):
                 'res_id': invoice.id,
             }
 
-    @api.depends('internal_commission_plan_id', 'sale_price')
+    @api.depends('internal_commission_plan_id', 'price_after_dis')
     def _compute_internal_commission(self):
         for rec in self:
-            if rec.internal_commission_plan_id and rec.sale_price > 0:
+            if rec.internal_commission_plan_id and rec.price_after_dis > 0:
                 rec.internal_commission_type = rec.internal_commission_plan_id.commission_type
                 if rec.internal_commission_plan_id.commission_type == 'fixed':
                     rec.internal_commission = rec.internal_commission_plan_id.commission
                 else:
-                    rec.internal_commission = (rec.sale_price * rec.internal_commission_plan_id.commission) / 100
+                    rec.internal_commission = (rec.price_after_dis * rec.internal_commission_plan_id.commission) / 100
             else:
                 rec.internal_commission_type = ''
                 rec.internal_commission = 0.0
