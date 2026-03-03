@@ -10,7 +10,7 @@ booking report   """,
     """,
     'license': 'LGPL-3',
     'depends': ['base', 'mail', 'sale_management', 'website',
-                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact', 'real_estate_management'],
+                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact', 'real_estate_management','px_custom_real_estate_management'],
     'data': [
         'security/ir.model.access.csv',
         'reports/report_paperformat.xml',

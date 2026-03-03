@@ -76,6 +76,10 @@
                 <!--                            invisible="not invoice_id"/>-->
                 <!--                </div>-->
             </xpath>
+            <xpath expr="//field[@name='sale_price']" position="after">
+                <field name="price_after_dis"/>
+
+            </xpath>
             <!--            <xpath expr="//group[field[@name='any_broker']]" position="after">-->
             <!--                <group string="External Broker Commission">-->
             <!--                    <group>-->
@@ -123,6 +127,10 @@
             </xpath>
             <xpath expr="//group[field[@name='any_broker']]" position="replace">
                 <group>
+                    <field name="maintenance_booking_percentage" invisible="1"/>
+                    <field name="discount_amount" invisible="1"/>
+                    <field name="price_after_payment" invisible="1"/>
+                    <field name="price_after_dis" invisible="1"/>
                     <field name="external_broker_id"/>
                     <field name="external_commission_plan_id" invisible="not external_broker_id"/>
                     <field name="external_commission_type" invisible="not external_broker_id"/>
