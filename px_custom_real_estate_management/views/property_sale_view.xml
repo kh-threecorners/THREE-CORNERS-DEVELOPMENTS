@@ -76,6 +76,10 @@
                 <!--                            invisible="not invoice_id"/>-->
                 <!--                </div>-->
             </xpath>
+            <xpath expr="//field[@name='sale_price']" position="after">
+                <field name="price_after_dis"/>
+
+            </xpath>
             <!--            <xpath expr="//group[field[@name='any_broker']]" position="after">-->
             <!--                <group string="External Broker Commission">-->
             <!--                    <group>-->
