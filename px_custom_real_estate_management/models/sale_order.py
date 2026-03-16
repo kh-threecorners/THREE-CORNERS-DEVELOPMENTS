@@ -95,7 +95,7 @@ class SaleOrder(models.Model):
             remaining_after_down = discounted_price - down_payment
 
             annual_count = plan.annual_installments_count
-            annual_total_amount = remaining_after_down * (plan.annual_payment_percentage / 100.0)
+            annual_total_amount = discounted_price * (plan.annual_payment_percentage / 100.0)
 
             multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
             no_of_periodic_installments = plan.payment_duration * multiplier
