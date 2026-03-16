@@ -235,17 +235,16 @@ class PropertySale(models.Model):
             if property_id and property_id.state == "sold":
                 raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
 
+            if not vals.get('sale_price'):
+                vals['sale_price'] = 0.0
+
+            if not vals.get('paid'):
+                vals['paid'] = 0.0
+
             rec = super(PropertySale, self).create(vals)
 
-            # تعيين نسبة الخصم من خطة الدفع إذا موجودة
             if rec.payment_plan_id:
                 rec.maintenance_booking_percentage = rec.payment_plan_id.discount or 0.0
-
-            # ضمان وجود قيمة sale_price و paid قبل الحساب
-            if not rec.sale_price:
-                rec.sale_price = 0.0
-            if not rec.paid:
-                rec.paid = 0.0
 
             rec._compute_financials()
             records.append(rec)
@@ -258,17 +257,19 @@ class PropertySale(models.Model):
             if property_id and property_id.state == "sold":
                 raise ValidationError(_("This property is already sold and cannot be booked or sold again."))
 
+        if 'sale_price' in vals and not vals.get('sale_price'):
+            vals['sale_price'] = 0.0
+
+        if 'paid' in vals and not vals.get('paid'):
+            vals['paid'] = 0.0
+
         res = super(PropertySale, self).write(vals)
 
         for rec in self:
-            # إعادة حساب الخصم بعد تعديل sale_price, paid أو خطة الدفع
             if 'payment_plan_id' in vals or 'sale_price' in vals or 'paid' in vals:
                 if rec.payment_plan_id:
                     rec.maintenance_booking_percentage = rec.payment_plan_id.discount or 0.0
-                if not rec.sale_price:
-                    rec.sale_price = 0.0
-                if not rec.paid:
-                    rec.paid = 0.0
+
                 rec._compute_financials()
 
         return res
