@@ -18,7 +18,7 @@ class PaymentPlan(models.Model):
     annual_payment_percentage = fields.Float(string="Annual Payment %", tracking=True,
                                              help="Percentage of the price after discount to be paid annually.")
     payment_start_date = fields.Date(string="Payment Start Date", default=fields.Date.context_today, required=True)
-    payment_duration = fields.Integer(string="Payment Duration (Years)", default=1, required=True, tracking=True)
+    payment_duration = fields.Integer(string="Payment Duration (Years)", default=1, required=False, tracking=True)
     payment_frequency = fields.Selection([
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly'),
@@ -57,7 +57,7 @@ class PaymentPlan(models.Model):
         help="Number of months after Sale Order date to create maintenance installment"
     )
     payment_duration_months = fields.Integer(
-        string="Extra Months",
+        string="Payment Duration (Months)",
         default=0,
         help="Additional months added to the payment duration"
     )

@@ -94,10 +94,13 @@ class SaleOrder(models.Model):
             down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
             remaining_after_down = discounted_price - down_payment
 
-            annual_count = plan.annual_installments_count
             annual_total_amount = discounted_price * (plan.annual_payment_percentage / 100.0)
 
-            total_months = (plan.payment_duration * 12) + (plan.payment_duration_months or 0)
+            total_months = plan.payment_duration_months or 0
+
+            if total_months <= 0:
+                print("❌ Payment duration months must be > 0")
+                continue
 
             interval_months = {
                 'monthly': 1,
@@ -108,9 +111,13 @@ class SaleOrder(models.Model):
             no_of_periodic_installments = total_months // interval_months
             remaining_months = total_months % interval_months
 
+            annual_count = total_months // 12
+
             print(f"📆 Total Months: {total_months}")
             print(f"📆 Interval: {interval_months}")
-            print(f"📆 Installments: {no_of_periodic_installments}, Remaining Months: {remaining_months}")
+            print(f"📆 Periodic Installments: {no_of_periodic_installments}")
+            print(f"📆 Annual Installments: {annual_count}")
+            print(f"📆 Remaining Months: {remaining_months}")
 
             amount_per_periodic = remaining_after_down - annual_total_amount
             amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
@@ -124,8 +131,8 @@ class SaleOrder(models.Model):
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': 'Down Payment',
-                    'capital_repayment': down_payment,
-                    'remaining_capital': remaining_after_down,
+                    'capital_repayment': round(down_payment, 2),
+                    'remaining_capital': round(remaining_after_down, 2),
                     'collection_status': 'not_due',
                     'collection_date': start_date,
                     'uom_id': uom_id,
@@ -137,8 +144,8 @@ class SaleOrder(models.Model):
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': f'Periodic Installment {i}',
-                    'capital_repayment': amount_per_installment,
-                    'remaining_capital': remaining_after_down - (i * amount_per_installment),
+                    'capital_repayment': round(amount_per_installment, 2),
+                    'remaining_capital': round(remaining_after_down - (i * amount_per_installment), 2),
                     'collection_status': 'not_due',
                     'collection_date': current_date,
                     'uom_id': uom_id,
@@ -150,7 +157,7 @@ class SaleOrder(models.Model):
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': 'Last Partial Installment',
-                    'capital_repayment': amount_per_installment,
+                    'capital_repayment': round(amount_per_installment, 2),
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
                     'collection_date': current_date,
@@ -158,19 +165,26 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            if annual_count > 0:
+            total_months = plan.payment_duration_months or 0
+            annual_count = plan.annual_installments_count or 0
+
+            if annual_count > 0 and total_months > 0:
+                interval_between_annuals = total_months / annual_count
+
                 for i in range(1, annual_count + 1):
+                    months_to_add = int(round(i * interval_between_annuals))
+
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Annual Installment {i}',
-                        'capital_repayment': annual_total_amount / annual_count,
-                        'remaining_capital': remaining_after_down - ((i * annual_total_amount) / annual_count),
+                        'capital_repayment': round(annual_total_amount / annual_count, 2),
+                        'remaining_capital': round(
+                            remaining_after_down - ((i * annual_total_amount) / annual_count), 2),
                         'collection_status': 'not_due',
-                        'collection_date': start_date + relativedelta(years=i),
+                        'collection_date': start_date + relativedelta(months=months_to_add),
                         'uom_id': uom_id,
                     }))
                     seq += 1
-
             maintenance_value = discounted_price * (plan.maintenance_percentage / 100.0) \
                 if hasattr(plan, 'maintenance_percentage') else 0.0
 
@@ -179,14 +193,15 @@ class SaleOrder(models.Model):
                 maintenance_date = start_date + relativedelta(months=maintenance_months)
 
                 lines.append((0, 0, {
-                    'sequence': 0,
+                    'sequence': seq,
                     'name': 'Maintenance Installment',
-                    'capital_repayment': maintenance_value,
+                    'capital_repayment': round(maintenance_value, 2),
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
                     'collection_date': maintenance_date,
                     'uom_id': uom_id,
                 }))
+                seq += 1
 
             for i, line in enumerate(lines):
                 line[2]['sequence'] = i + 1
@@ -199,114 +214,7 @@ class SaleOrder(models.Model):
             order.installment_line_ids = lines
             print("===== Done Onchange =====\n")
 
-    # @api.onchange('property_id', 'payment_id', 'maintenance_date')
-    # def _onchange_payment_plan(self):
-    #     for order in self:
-    #         print("\n===================== Onchange Triggered =====================")
-    #         print(f"SO: {order.name}")
-    #
-    #         print("🔄 Clearing Old Installments...")
-    #         order.installment_line_ids = [(5, 0, 0)]
-    #
-    #         if not order.payment_id:
-    #             print("❌ No Payment Plan Selected → EXIT")
-    #             continue
-    #
-    #         plan = order.payment_id
-    #         start_date = order.date_order.date() if order.date_order else fields.Date.context_today(order)
-    #         total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
-    #
-    #         if not total_amount:
-    #             print("❌ No amount calculated from SO lines → EXIT")
-    #             continue
-    #
-    #         print(f"💡 Payment Plan: {plan.name}")
-    #         print(f"💰 Total Amount: {total_amount}")
-    #
-    #         discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
-    #         down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
-    #         remaining_after_down = discounted_price - down_payment
-    #
-    #         annual_count = plan.annual_installments_count
-    #         annual_total_amount = discounted_price * (plan.annual_payment_percentage / 100.0)
-    #
-    #         multiplier = {'monthly': 12, 'quarterly': 4, 'semi_annually': 2}.get(plan.payment_frequency, 0)
-    #         no_of_periodic_installments = plan.payment_duration * multiplier
-    #
-    #         amount_per_periodic = remaining_after_down - annual_total_amount
-    #         amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
-    #
-    #         lines = []
-    #         seq = 1
-    #         current_date = start_date
-    #         uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
-    #
-    #         if down_payment > 0:
-    #             lines.append((0, 0, {
-    #                 'sequence': seq,
-    #                 'name': 'Down Payment',
-    #                 'capital_repayment': down_payment,
-    #                 'remaining_capital': remaining_after_down,
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': start_date,
-    #                 'uom_id': uom_id,
-    #             }))
-    #             seq += 1
-    #
-    #         interval_months = {'monthly': 1, 'quarterly': 3, 'semi_annually': 6}.get(plan.payment_frequency, 1)
-    #         for i in range(1, no_of_periodic_installments + 1):
-    #             current_date += relativedelta(months=interval_months)
-    #             lines.append((0, 0, {
-    #                 'sequence': seq,
-    #                 'name': f'Periodic Installment {i}',
-    #                 'capital_repayment': amount_per_installment,
-    #                 'remaining_capital': remaining_after_down - (i * amount_per_installment),
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': current_date,
-    #                 'uom_id': uom_id,
-    #             }))
-    #             seq += 1
-    #
-    #         if annual_count > 0:
-    #             for i in range(1, annual_count + 1):
-    #                 lines.append((0, 0, {
-    #                     'sequence': seq,
-    #                     'name': f'Annual Installment {i}',
-    #                     'capital_repayment': annual_total_amount / annual_count,
-    #                     'remaining_capital': remaining_after_down - ((i * annual_total_amount) / annual_count),
-    #                     'collection_status': 'not_due',
-    #                     'collection_date': start_date + relativedelta(years=i),
-    #                     'uom_id': uom_id,
-    #                 }))
-    #                 seq += 1
-    #
-    #         maintenance_value = discounted_price * (plan.maintenance_percentage / 100.0) \
-    #             if hasattr(plan, 'maintenance_percentage') else 0.0
-    #
-    #         if maintenance_value > 0:
-    #             maintenance_months = plan.maintenance_after_months or 0
-    #             maintenance_date = start_date + relativedelta(months=maintenance_months)
-    #
-    #             lines.append((0, 0, {
-    #                 'sequence': 0,
-    #                 'name': 'Maintenance Installment',
-    #                 'capital_repayment': maintenance_value,
-    #                 'remaining_capital': 0.0,
-    #                 'collection_status': 'not_due',
-    #                 'collection_date': maintenance_date,
-    #                 'uom_id': uom_id,
-    #             }))
-    #
-    #         for i, line in enumerate(lines):
-    #             line[2]['sequence'] = i + 1
-    #
-    #         print("\n===== Final Generated Installments =====")
-    #         for r in lines:
-    #             d = r[2]
-    #             print(f"{d['sequence']} | {d['name']} | {d['capital_repayment']} | {d['collection_date']}")
-    #
-    #         order.installment_line_ids = lines
-    #         print("===== Done Onchange =====\n")
+
 
     def _onchange_property_add_product(self):
         for order in self:

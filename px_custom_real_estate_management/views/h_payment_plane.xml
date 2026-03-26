@@ -21,7 +21,7 @@
                 <field name="discount"/>
                 <field name="down_payment_percentage"/>
                 <field name="annual_payment_percentage"/>
-                <field name="payment_duration"/>
+                <field name="payment_duration" invisible="1"/>
                 <field name="annual_installments_count"/>
                 <field name="payment_frequency"/>
                 <field name="payment_start_date"/>
@@ -45,7 +45,7 @@
                         <field name="down_payment_percentage"/>
                         <field name="annual_payment_percentage"/>
                         <field name="payment_frequency"/>
-                        <field name="payment_duration"/>
+                        <field name="payment_duration" invisible="1"/>
                         <field name="payment_duration_months"/>
                         <field name="annual_installments_count"/>
                         <field name="payment_start_date"/>
