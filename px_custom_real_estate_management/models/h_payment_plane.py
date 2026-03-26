@@ -56,6 +56,11 @@ class PaymentPlan(models.Model):
         string="Maintenance After (Months)",
         help="Number of months after Sale Order date to create maintenance installment"
     )
+    payment_duration_months = fields.Integer(
+        string="Extra Months",
+        default=0,
+        help="Additional months added to the payment duration"
+    )
 
     @api.depends('unit_price', 'discount')
     def _compute_price_after_discount(self):
