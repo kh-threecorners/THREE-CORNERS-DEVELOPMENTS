@@ -103,19 +103,43 @@ class AccountMove(models.Model):
                 self.late_fee_move_line_id.price_unit = self.late_fee_move_line_id.product_id.list_price
 
 
+    # def action_register_payment(self):
+    #     action = super().action_register_payment()
+    #
+    #     if self.is_cheque:
+    #         action['context'].update({
+    #             'default_is_cheque_payment': True,
+    #             'default_cheque_payment_number': self.cheque_number,
+    #             'default_customer_payment_cheque_bank_id': self.customer_cheque_bank_id.id,
+    #             'default_cheque_payment_due_date': self.cheque_due_date,
+    #         })
+    #
+    #     return action
+
     def action_register_payment(self):
+        _logger.info("تم استدعاء action_register_payment للفاتورة %s", self.name)
+
         action = super().action_register_payment()
+        _logger.info("تم استدعاء super().action_register_payment(), النتيجة: %s", action)
 
         if self.is_cheque:
+            _logger.info("الفاتورة هي دفعة شيك. بيانات الشيك قبل التحديث: Cheque Number=%s, Bank=%s, Due Date=%s",
+                         self.cheque_number,
+                         self.customer_cheque_bank_id.name if self.customer_cheque_bank_id else None,
+                         self.cheque_due_date)
+
             action['context'].update({
                 'default_is_cheque_payment': True,
                 'default_cheque_payment_number': self.cheque_number,
-                'default_customer_payment_cheque_bank_id': self.customer_cheque_bank_id.id,
+                'default_customer_payment_cheque_bank_id': self.customer_cheque_bank_id.id if self.customer_cheque_bank_id else None,
                 'default_cheque_payment_due_date': self.cheque_due_date,
             })
+            _logger.info("تم تحديث context ببيانات الشيك: %s", action['context'])
+
+        else:
+            _logger.info("الفاتورة ليست دفعة شيك.")
 
         return action
-
 
     #
     # @api.model_create_multi

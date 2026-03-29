@@ -227,7 +227,6 @@ class PropertySale(models.Model):
         for rec in self:
             rec.state = "draft"
 
-
     @api.model
     def create(self, vals_list):
         records = []
