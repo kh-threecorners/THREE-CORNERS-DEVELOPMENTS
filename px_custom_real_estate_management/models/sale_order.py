@@ -25,6 +25,10 @@ class SaleOrder(models.Model):
         string="SO Installment Invoices",
         compute="_compute_so_installment_invoice_count"
     )
+    installment_start_date = fields.Date(
+        string="Installment Start Date",
+        help="Start date for installment schedule generation. Defaults to the order date."
+    )
     maintenance_date = fields.Date(
         string="Maintenance Date",
         help="Date of maintenance installment"
@@ -51,8 +55,23 @@ class SaleOrder(models.Model):
             ])
             order.installment_count = count
 
+    @api.onchange('date_order')
+    def _onchange_date_order_set_installment_start(self):
+        for order in self:
+            if not order.installment_start_date and order.date_order:
+                order.installment_start_date = order.date_order.date()
+
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if 'installment_start_date' not in vals and vals.get('date_order'):
+                from datetime import datetime
+                date_order = vals['date_order']
+                if isinstance(date_order, str):
+                    date_order = datetime.fromisoformat(date_order).date()
+                elif hasattr(date_order, 'date'):
+                    date_order = date_order.date()
+                vals['installment_start_date'] = date_order
         records = super().create(vals_list)
         for order in records:
             if order.property_id and order.payment_id:
@@ -62,11 +81,11 @@ class SaleOrder(models.Model):
     def write(self, vals):
         res = super().write(vals)
         for order in self:
-            if 'property_id' in vals or 'payment_id' in vals:
+            if 'property_id' in vals or 'payment_id' in vals or 'installment_start_date' in vals:
                 order._onchange_payment_plan()
         return res
 
-    @api.onchange('property_id', 'payment_id', 'maintenance_date')
+    @api.onchange('property_id', 'payment_id', 'maintenance_date', 'installment_start_date')
     def _onchange_payment_plan(self):
         for order in self:
             print("\n===================== Onchange Triggered =====================")
@@ -80,7 +99,9 @@ class SaleOrder(models.Model):
                 continue
 
             plan = order.payment_id
-            start_date = order.date_order.date() if order.date_order else fields.Date.context_today(order)
+            start_date = order.installment_start_date or (
+                order.date_order.date() if order.date_order else fields.Date.context_today(order)
+            )
             total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
 
             if not total_amount:
