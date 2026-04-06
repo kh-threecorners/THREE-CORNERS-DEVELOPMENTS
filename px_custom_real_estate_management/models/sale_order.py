@@ -27,6 +27,7 @@ class SaleOrder(models.Model):
     )
     installment_start_date = fields.Date(
         string="Installment Start Date",
+        default=lambda self: fields.Date.today(),
         help="Start date for installment schedule generation. Defaults to the order date."
     )
     maintenance_date = fields.Date(
