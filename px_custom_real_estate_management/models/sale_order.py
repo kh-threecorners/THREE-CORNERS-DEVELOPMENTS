@@ -12,14 +12,11 @@ class SaleOrder(models.Model):
         string="Installment Invoices",
         compute="_compute_installment_count"
     )
-    installment_invoice_created = fields.Boolean(default=False)
-    installment_invoice_exist = fields.Boolean(
-        string="Has Installment Invoices",
-        compute="_compute_installment_exist"
-    )
+    installment_invoice_created = fields.Boolean(default=False, copy=False)
+
     property_id = fields.Many2one('property.property', string="Property")
     payment_id = fields.Many2one('payment.plane', string="Payment Plan")
-    installment_line_ids = fields.One2many('sale.order.installment.line', 'sale_order_id', string="Installment Lines")
+    installment_line_ids = fields.One2many('sale.order.installment.line', 'sale_order_id', string="Installment Lines", copy=False)
 
     so_installment_invoice_count = fields.Integer(
         string="SO Installment Invoices",
@@ -250,10 +247,10 @@ class SaleOrder(models.Model):
                     'price_unit': order.property_id.unit_price or product.lst_price,
                 })]
 
-    @api.depends('installment_count', 'installment_invoice_created')
-    def _compute_installment_exist(self):
-        for order in self:
-            order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
+    # @api.depends('installment_count', 'installment_invoice_created')
+    # def _compute_installment_exist(self):
+    #     for order in self:
+    #         order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
 
 
     def action_create_installment_invoices_from_so(self):
