@@ -86,14 +86,10 @@ class SaleOrder(models.Model):
     @api.onchange('property_id', 'payment_id', 'maintenance_date', 'installment_start_date')
     def _onchange_payment_plan(self):
         for order in self:
-            print("\n===================== Onchange Triggered =====================")
-            print(f"SO: {order.name}")
 
-            print("🔄 Clearing Old Installments...")
             order.installment_line_ids = [(5, 0, 0)]
 
             if not order.payment_id:
-                print("❌ No Payment Plan Selected → EXIT")
                 continue
 
             plan = order.payment_id
@@ -103,11 +99,8 @@ class SaleOrder(models.Model):
             total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
 
             if not total_amount:
-                print("❌ No amount calculated from SO lines → EXIT")
                 continue
 
-            print(f"💡 Payment Plan: {plan.name}")
-            print(f"💰 Total Amount: {total_amount}")
 
             discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
             down_payment = discounted_price * (plan.down_payment_percentage / 100.0)
@@ -118,7 +111,6 @@ class SaleOrder(models.Model):
             total_months = plan.payment_duration_months or 0
 
             if total_months <= 0:
-                print("❌ Payment duration months must be > 0")
                 continue
 
             interval_months = {
@@ -132,11 +124,7 @@ class SaleOrder(models.Model):
 
             annual_count = total_months // 12
 
-            print(f"📆 Total Months: {total_months}")
-            print(f"📆 Interval: {interval_months}")
-            print(f"📆 Periodic Installments: {no_of_periodic_installments}")
-            print(f"📆 Annual Installments: {annual_count}")
-            print(f"📆 Remaining Months: {remaining_months}")
+
 
             amount_per_periodic = remaining_after_down - annual_total_amount
             amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
@@ -188,11 +176,7 @@ class SaleOrder(models.Model):
             annual_count = plan.annual_installments_count or 0
 
             if annual_count > 0 and total_months > 0:
-                interval_between_annuals = total_months / annual_count
-
                 for i in range(1, annual_count + 1):
-                    months_to_add = int(round(i * interval_between_annuals))
-
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Annual Installment {i}',
@@ -200,7 +184,7 @@ class SaleOrder(models.Model):
                         'remaining_capital': round(
                             remaining_after_down - ((i * annual_total_amount) / annual_count), 2),
                         'collection_status': 'not_due',
-                        'collection_date': start_date + relativedelta(months=months_to_add),
+                        'collection_date': start_date + relativedelta(years=i),
                         'uom_id': uom_id,
                     }))
                     seq += 1
@@ -225,13 +209,10 @@ class SaleOrder(models.Model):
             for i, line in enumerate(lines):
                 line[2]['sequence'] = i + 1
 
-            print("\n===== Final Generated Installments =====")
             for r in lines:
                 d = r[2]
-                print(f"{d['sequence']} | {d['name']} | {d['capital_repayment']} | {d['collection_date']}")
 
             order.installment_line_ids = lines
-            print("===== Done Onchange =====\n")
 
 
 
@@ -263,16 +244,13 @@ class SaleOrder(models.Model):
         )
 
         for order in self:
-            print("➡️ Creating installment invoices for:", order.name)
             if not order.installment_line_ids:
-                print("⚠️ No installment lines for this order")
                 continue
 
             order_invoices = AccountMove
 
             for line in order.installment_line_ids:
                 if line.collection_status == 'collected':
-                    print(f"⏭️ Skipping collected line: {line.name}")
                     continue
 
                 invoice_vals = order._prepare_invoice() or {}
@@ -296,17 +274,13 @@ class SaleOrder(models.Model):
                     'invoice_line_ids': [(0, 0, invoice_line_vals)],
                 })
 
-                print("📝 Creating invoice with values:", invoice_vals)
                 invoice = AccountMove.create(invoice_vals)
                 order_invoices |= invoice
-                print("✅ Created Invoice ID:", invoice.id, "for line:", line.name)
 
             if order_invoices:
                 order.installment_invoice_created = True
                 created_invoices |= order_invoices
-                print("💾 Updated order as having created installment invoices")
 
-        print("🎯 Total invoices created:", len(created_invoices))
         return {
             'type': 'ir.actions.act_window',
             'name': 'SO Installment Invoices',
