@@ -266,9 +266,12 @@ class SaleOrder(models.Model):
                 if line.name == 'Down Payment' and down_payment_account:
                     invoice_line_vals['account_id'] = down_payment_account.id
 
+                invoice_date = line.collection_date or fields.Date.today()
                 invoice_vals.update({
                     'move_type': 'out_invoice',
-                    'invoice_date': line.collection_date or fields.Date.today(),
+                    'invoice_date': invoice_date,
+                    'invoice_date_due': invoice_date,
+                    'invoice_payment_term_id': False,
                     'sale_order_id': order.id,
                     'sale_order_installment_id': line.id,
                     'invoice_line_ids': [(0, 0, invoice_line_vals)],
@@ -301,6 +304,8 @@ class SaleOrder(models.Model):
                     invoice_vals = order._prepare_invoice()
                     invoice_vals.update({
                         'invoice_date': installment.collection_date,
+                        'invoice_date_due': installment.collection_date,
+                        'invoice_payment_term_id': False,
                         'sale_order_id': order.id,
                         'installment_id': installment.id,
                         'invoice_line_ids': [(0, 0, {
