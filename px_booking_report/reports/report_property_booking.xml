@@ -43,7 +43,7 @@
                                 <p><strong>السيد/ة:</strong> <span t-field="o.partner_id.name"/></p>
                                 <p><strong>الرقم القومي:</strong> <span t-field="o.partner_id.id_number"/></p>
                                 <p><strong>عنوان الرسائل:</strong> <span t-field="o.partner_id.street"/> <span t-field="o.partner_id.street2"/>، <span t-field="o.partner_id.city"/>، <span t-field="o.partner_id.state_id.name"/>، <span t-field="o.partner_id.country_id.name"/></p>
-                                <p><strong>الوظيفة:</strong> <span t-field="o.partner_id.job"/></p>
+                                <p><strong>الوظيفة:</strong> <span t-field="o.partner_id.function"/></p>
                                 <p><strong>الجنسية:</strong> <span t-field="o.partner_id.nationality"/></p>
                                 <p><strong> الهاتف:</strong> <span t-field="o.partner_id.phone"/></p>
                                 <p><strong>الإيميل:</strong> <span t-field="o.partner_id.email"/></p>
