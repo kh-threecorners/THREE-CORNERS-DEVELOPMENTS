@@ -51,6 +51,7 @@
                         <field name="payment_start_date"/>
                         <field name="maintenance_percentage"/>
                         <field name="is_maintenance_in_middle" invisible="1"/>
+                        <field name="maintenance_after_months" />
                     </group>
                 </sheet>
             </form>
