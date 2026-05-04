@@ -172,13 +172,13 @@ class PropertySale(models.Model):
     #         discount_amount = (rec.sale_price * rec.discount) / 100
     #         rec.price_after_discount = rec.sale_price - discount_amount
 
-    @api.onchange('price_after_discount', 'sale_price')
-    def _onchange_discount(self):
-        for rec in self:
-            if rec.sale_price > 0:
-                rec.discount = round((rec.sale_price - rec.price_after_discount) / rec.sale_price * 100, 2)
-            else:
-                rec.discount = 0
+    # @api.onchange('price_after_discount', 'sale_price')
+    # def _onchange_discount(self):
+    #     for rec in self:
+    #         if rec.sale_price > 0:
+    #             rec.discount = round((rec.sale_price - rec.price_after_discount) / rec.sale_price * 100, 2)
+    #         else:
+    #             rec.discount = 0
 
     @api.model
     def create(self, vals_list):
@@ -192,7 +192,7 @@ class PropertySale(models.Model):
 
         return records[0] if len(records) == 1 else records
 
-    @api.depends('commission_plan_id', 'sale_price')
+    @api.depends('commission_plan_id', 'price_after_discount')
     def _compute_commission_and_commission_type(self):
         """Calculate commission based on commission plan and sale price"""
         for rec in self:
@@ -200,7 +200,7 @@ class PropertySale(models.Model):
             if rec.commission_plan_id.commission_type == 'fixed':
                 rec.commission = rec.commission_plan_id.commission
             else:
-                rec.commission = (rec.sale_price *
+                rec.commission = (rec.price_after_dis *
                                   rec.commission_plan_id.commission / 100)
 
     def create_invoice(self):
