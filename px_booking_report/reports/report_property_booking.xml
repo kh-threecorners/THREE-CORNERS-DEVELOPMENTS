@@ -42,12 +42,11 @@
                             <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
                                 <p><strong>السيد/ة:</strong> <span t-field="o.partner_id.name"/></p>
                                 <p><strong>الرقم القومي:</strong> <span t-field="o.partner_id.id_number"/></p>
-                                <p><strong>عنوان الرسائل:</strong> <span t-field="o.partner_id.partner_street"/> <span t-field="o.partner_street2"/>، <span t-field="o.partner_city"/>، <span t-field="o.partner_state_id"/>، <span t-field="o.partner_country_id"/></p>
-                                <p><strong>الوظيفة:</strong> <span t-field="o.partner_id.partner_jop"/></p>
-                                <p><strong>الجنسية:</strong> <span t-field="o.partner_id.partner_nationality"/></p>
-                                <p><strong> الهاتف:</strong> <span t-field="o.partner_id.partner_phone"/></p>
-                                <p><strong> الموبايل:</strong> <span t-field="o.partner_id.partner_mobile"/></p>
-                                <p><strong>الإيميل:</strong> <span t-field="o.partner_id.partner_email"/></p>
+                                <p><strong>عنوان الرسائل:</strong> <span t-field="o.partner_id.street"/> <span t-field="o.partner_id.street2"/>، <span t-field="o.partner_id.city"/>، <span t-field="o.partner_id.state_id.name"/>، <span t-field="o.partner_id.country_id.name"/></p>
+                                <p><strong>الوظيفة:</strong> <span t-field="o.partner_id.job"/></p>
+                                <p><strong>الجنسية:</strong> <span t-field="o.partner_id.nationality"/></p>
+                                <p><strong> الهاتف:</strong> <span t-field="o.partner_id.phone"/></p>
+                                <p><strong>الإيميل:</strong> <span t-field="o.partner_id.email"/></p>
                             </div>
 
                             <!-- Unit Data -->
