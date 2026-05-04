@@ -192,7 +192,7 @@ class PropertySale(models.Model):
 
         return records[0] if len(records) == 1 else records
 
-    @api.depends('commission_plan_id', 'price_after_dis')
+    @api.depends('commission_plan_id', 'price_after_discount')
     def _compute_commission_and_commission_type(self):
         """Calculate commission based on commission plan and sale price"""
         for rec in self:
