@@ -35,7 +35,7 @@
                     type="object"
                     string="Create Installment Invoices"
                     class="btn-primary"
-                    invisible="state != 'sale' or not payment_id or installment_invoice_created" />
+                    invisible="not installment_line_ids or installment_invoice_created" />
             </header>
             <xpath expr="//field[@name='project_id']" position="after">
 <!--                <field name="property_id"/>-->
