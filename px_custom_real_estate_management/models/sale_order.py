@@ -360,6 +360,11 @@ class SaleOrderInstallmentLine(models.Model):
     sequence = fields.Integer(string='Seq.')
     name = fields.Char(string='Description')
     capital_repayment = fields.Float(string='Installment Amount')
+    amount_after_tax = fields.Float(
+        string='Amount After Taxes',
+        compute='_compute_amount_after_tax',
+        store=True,
+    )
     remaining_capital = fields.Float(string='Remaining Capital')
     collection_status = fields.Selection([
         ('not_due', 'Not Due'),
@@ -368,6 +373,24 @@ class SaleOrderInstallmentLine(models.Model):
     ], string="Collection Status", default='not_due')
     collection_date = fields.Date(string="Collection Date")
     uom_id = fields.Many2one('uom.uom', string="Unit of Measure")
+
+    @api.depends('capital_repayment', 'sale_order_id.order_line.tax_ids')
+    def _compute_amount_after_tax(self):
+        for line in self:
+            order = line.sale_order_id
+            order_line = order.order_line[:1]
+            taxes = order_line.tax_ids
+            if taxes and line.capital_repayment:
+                res = taxes.compute_all(
+                    line.capital_repayment,
+                    currency=order.currency_id,
+                    quantity=1.0,
+                    product=order_line.product_id,
+                    partner=order.partner_id,
+                )
+                line.amount_after_tax = res['total_included']
+            else:
+                line.amount_after_tax = line.capital_repayment
 
 
 class ProductProduct(models.Model):

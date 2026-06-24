@@ -50,6 +50,7 @@
                             <field name="sequence"/>
                             <field name="name"/>
                             <field name="capital_repayment"/>
+                            <field name="amount_after_tax"/>
                             <field name="remaining_capital"/>
                             <field name="collection_status"/>
                             <field name="collection_date"/>
