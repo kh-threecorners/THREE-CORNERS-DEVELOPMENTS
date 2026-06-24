@@ -1,3 +1,5 @@
+import math
+
 from odoo import models, api, _, fields
 from dateutil.relativedelta import relativedelta
 from odoo.exceptions import ValidationError
@@ -17,6 +19,17 @@ class SaleOrder(models.Model):
     property_id = fields.Many2one('property.property', string="Property")
     payment_id = fields.Many2one('payment.plane', string="Payment Plan")
     installment_line_ids = fields.One2many('sale.order.installment.line', 'sale_order_id', string="Installment Lines", copy=False)
+    installment_round_step = fields.Integer(
+        string="Round To Nearest",
+        default=0,
+        help="Round each periodic installment amount to the nearest multiple of this number "
+             "(e.g. 10, 100, 1000). Leave 0 to keep exact amounts.",
+    )
+    installment_round_direction = fields.Selection(
+        [('up', 'Round Up'), ('down', 'Round Down')],
+        string="Rounding Direction",
+        default='up',
+    )
 
     so_installment_invoice_count = fields.Integer(
         string="SO Installment Invoices",
@@ -85,6 +98,80 @@ class SaleOrder(models.Model):
         self._generate_installment_lines()
         return True
 
+    def action_round_installments(self):
+        """Button: round periodic installments to the nearest step and recalculate."""
+        self.ensure_one()
+        if self.installment_invoice_created:
+            raise ValidationError(_(
+                "Installment invoices have already been created for this order. "
+                "Regenerating the schedule would desync those invoices. "
+                "Cancel/delete the existing installment invoices first."
+            ))
+        if not self.installment_round_step or self.installment_round_step <= 0:
+            raise ValidationError(_("Set a positive 'Round To Nearest' value before rounding."))
+        if not self.installment_round_direction:
+            raise ValidationError(_("Select a rounding direction (Up or Down) before rounding."))
+        self._generate_installment_lines()
+        return True
+
+    def _installment_tax_multiplier(self):
+        """After-tax value of one pre-tax currency unit for this order's product line.
+
+        Used to round the *after-tax* installment amount: an amount paid by the
+        customer of `x` corresponds to a pre-tax `capital_repayment` of `x / multiplier`.
+        Returns 1.0 when the line has no taxes.
+        """
+        self.ensure_one()
+        order_line = self.order_line[:1]
+        taxes = order_line.tax_ids
+        if not taxes:
+            return 1.0
+        res = taxes.compute_all(
+            1.0,
+            currency=self.currency_id,
+            quantity=1.0,
+            product=order_line.product_id,
+            partner=self.partner_id,
+        )
+        base = res['total_excluded'] or 1.0
+        return res['total_included'] / base
+
+    @staticmethod
+    def _round_amount_to_step(value, step, direction):
+        """Round a single amount up/down to the nearest multiple of step."""
+        if not step or step <= 0:
+            return value
+        ratio = round(value / step, 6)
+        if direction == 'up':
+            return math.ceil(ratio) * step
+        if direction == 'down':
+            return math.floor(ratio) * step
+        return value
+
+    def _build_periodic_amounts(self, total, default_count, step, direction):
+        """Return the list of periodic installment amounts.
+
+        When a rounding step is given, each installment is the rounded unit and
+        the number of installments floats (more when rounding down, fewer when
+        rounding up); any leftover is added as a final reconciling installment so
+        the amounts still sum exactly to `total`.
+        """
+        total = round(total, 2)
+        if default_count <= 0 or total <= 0:
+            return []
+        unit = self._round_amount_to_step(total / default_count, step, direction)
+        if unit <= 0:
+            raise ValidationError(_(
+                "The rounding step %s is too large to round the installment amount down. "
+                "Use a smaller step."
+            ) % step)
+        full_count = int(total // unit)
+        amounts = [float(unit)] * full_count
+        remainder = round(total - unit * full_count, 2)
+        if remainder > 0.005:
+            amounts.append(remainder)
+        return amounts
+
     def _generate_installment_lines(self):
         for order in self:
 
@@ -134,7 +221,12 @@ class SaleOrder(models.Model):
 
 
             amount_per_periodic = remaining_after_down - annual_total_amount
-            amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
+
+            rounding_active = bool(
+                order.installment_round_step
+                and order.installment_round_step > 0
+                and order.installment_round_direction
+            )
 
             lines = [(5, 0, 0)]
             seq = 1
@@ -153,31 +245,60 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            for i in range(1, no_of_periodic_installments + 1):
-                current_date += relativedelta(months=interval_months)
-                lines.append((0, 0, {
-                    'sequence': seq,
-                    'name': f'Periodic Installment {i}',
-                    'capital_repayment': round(amount_per_installment, 2),
-                    'remaining_capital': round(remaining_after_down - (i * amount_per_installment), 2),
-                    'collection_status': 'not_due',
-                    'collection_date': current_date,
-                    'uom_id': uom_id,
-                }))
-                seq += 1
+            if rounding_active:
+                # Round the *after-tax* amount the customer pays, then back-solve the
+                # pre-tax capital_repayment (= after_tax / tax multiplier).
+                multiplier = order._installment_tax_multiplier()
+                periodic_after_tax_total = amount_per_periodic * multiplier
+                after_tax_amounts = order._build_periodic_amounts(
+                    periodic_after_tax_total,
+                    no_of_periodic_installments,
+                    order.installment_round_step,
+                    order.installment_round_direction,
+                )
+                running_remaining = remaining_after_down
+                for idx, after_tax_amount in enumerate(after_tax_amounts, start=1):
+                    current_date += relativedelta(months=interval_months)
+                    pre_tax_amount = after_tax_amount / multiplier if multiplier else after_tax_amount
+                    running_remaining -= pre_tax_amount
+                    lines.append((0, 0, {
+                        'sequence': seq,
+                        'name': f'Periodic Installment {idx}',
+                        'capital_repayment': round(pre_tax_amount, 2),
+                        'remaining_capital': round(running_remaining, 2),
+                        'collection_status': 'not_due',
+                        'collection_date': current_date,
+                        'uom_id': uom_id,
+                    }))
+                    seq += 1
+            else:
+                amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
 
-            if remaining_months > 0:
-                current_date += relativedelta(months=remaining_months)
-                lines.append((0, 0, {
-                    'sequence': seq,
-                    'name': 'Last Partial Installment',
-                    'capital_repayment': round(amount_per_installment, 2),
-                    'remaining_capital': 0.0,
-                    'collection_status': 'not_due',
-                    'collection_date': current_date,
-                    'uom_id': uom_id,
-                }))
-                seq += 1
+                for i in range(1, no_of_periodic_installments + 1):
+                    current_date += relativedelta(months=interval_months)
+                    lines.append((0, 0, {
+                        'sequence': seq,
+                        'name': f'Periodic Installment {i}',
+                        'capital_repayment': round(amount_per_installment, 2),
+                        'remaining_capital': round(remaining_after_down - (i * amount_per_installment), 2),
+                        'collection_status': 'not_due',
+                        'collection_date': current_date,
+                        'uom_id': uom_id,
+                    }))
+                    seq += 1
+
+                if remaining_months > 0:
+                    current_date += relativedelta(months=remaining_months)
+                    lines.append((0, 0, {
+                        'sequence': seq,
+                        'name': 'Last Partial Installment',
+                        'capital_repayment': round(amount_per_installment, 2),
+                        'remaining_capital': 0.0,
+                        'collection_status': 'not_due',
+                        'collection_date': current_date,
+                        'uom_id': uom_id,
+                    }))
+                    seq += 1
 
             annual_count = plan.annual_installments_count if plan.annual_installments_count > 0 else (plan.payment_duration or 0)
 

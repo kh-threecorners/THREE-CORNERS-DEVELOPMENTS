@@ -45,6 +45,19 @@
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Installments" invisible="not payment_id">
+                    <group>
+                        <group>
+                            <field name="installment_round_step"/>
+                            <field name="installment_round_direction"/>
+                        </group>
+                        <group>
+                            <button name="action_round_installments"
+                                    string="Round"
+                                    type="object"
+                                    class="btn-secondary"
+                                    icon="fa-calculator"/>
+                        </group>
+                    </group>
                     <field name="installment_line_ids">
                         <list editable="bottom">
                             <field name="sequence"/>
