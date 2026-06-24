@@ -508,9 +508,8 @@ class PropertySale(models.Model):
             })
 
             # 2. استدعاء وظيفة توليد الأقساط يدوياً
-            # تم تغيير الاسم إلى _onchange_payment_plan بناءً على الكود المرفق
             if sale_order.payment_id:
-                sale_order._onchange_payment_plan()
+                sale_order._generate_installment_lines()
 
             # 3. تحديث سجل البيع العقاري
             rec.write({

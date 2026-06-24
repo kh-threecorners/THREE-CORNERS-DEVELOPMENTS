@@ -21,6 +21,11 @@
                 </button>
             </xpath>
             <header position="inside">
+                <button name="action_generate_installments"
+                        string="Generate Installments"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not payment_id" />
                 <button name="action_create_installment_invoices"
                         string="Create Installment Invoices"
                         type="object"

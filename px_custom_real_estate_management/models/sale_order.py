@@ -71,26 +71,25 @@ class SaleOrder(models.Model):
                     date_order = date_order.date()
                 vals['installment_start_date'] = date_order
         records = super().create(vals_list)
-        for order in records:
-            if order.property_id and order.payment_id:
-                order._onchange_payment_plan()
         return records
 
-    def write(self, vals):
-        res = super().write(vals)
-        for order in self:
-            if 'property_id' in vals or 'payment_id' in vals or 'installment_start_date' in vals:
-                order._onchange_payment_plan()
-        return res
+    def action_generate_installments(self):
+        """Button: (re)generate the installment schedule for this order."""
+        self.ensure_one()
+        if self.installment_invoice_created:
+            raise ValidationError(_(
+                "Installment invoices have already been created for this order. "
+                "Regenerating the schedule would desync those invoices. "
+                "Cancel/delete the existing installment invoices first."
+            ))
+        self._generate_installment_lines()
+        return True
 
-    @api.onchange('property_id', 'payment_id', 'maintenance_date', 'installment_start_date')
-    def _onchange_payment_plan(self):
+    def _generate_installment_lines(self):
         for order in self:
-
-            order.installment_line_ids = [(5, 0, 0)]
 
             if not order.payment_id:
-                continue
+                raise ValidationError(_("Please select a Payment Plan before generating installments."))
 
             plan = order.payment_id
             start_date = order.installment_start_date or (
@@ -99,7 +98,9 @@ class SaleOrder(models.Model):
             total_amount = sum(line.price_unit * line.product_uom_qty for line in order.order_line)
 
             if not total_amount:
-                continue
+                raise ValidationError(_(
+                    "Add at least one order line with a price before generating installments."
+                ))
 
 
             discounted_price = total_amount - (total_amount * (plan.discount / 100.0))
@@ -114,7 +115,10 @@ class SaleOrder(models.Model):
             total_months = (plan.payment_duration or 0) * 12 + (plan.payment_duration_months or 0)
 
             if total_months <= 0:
-                continue
+                raise ValidationError(_(
+                    "The selected Payment Plan '%s' has no duration set. "
+                    "Set a Payment Duration (years or months) on the plan before generating installments."
+                ) % plan.name)
 
             interval_months = {
                 'monthly': 1,
@@ -132,7 +136,7 @@ class SaleOrder(models.Model):
             amount_per_periodic = remaining_after_down - annual_total_amount
             amount_per_installment = amount_per_periodic / no_of_periodic_installments if no_of_periodic_installments else 0
 
-            lines = []
+            lines = [(5, 0, 0)]
             seq = 1
             current_date = start_date
             uom_id = order.order_line[0].product_uom_id.id if order.order_line else False
@@ -208,11 +212,11 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            for i, line in enumerate(lines):
-                line[2]['sequence'] = i + 1
-
-            for r in lines:
-                d = r[2]
+            seq = 1
+            for command in lines:
+                if command[0] == 0:
+                    command[2]['sequence'] = seq
+                    seq += 1
 
             order.installment_line_ids = lines
 
