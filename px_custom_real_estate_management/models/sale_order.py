@@ -108,7 +108,10 @@ class SaleOrder(models.Model):
 
             annual_total_amount = discounted_price * (plan.annual_payment_percentage / 100.0)
 
-            total_months = plan.payment_duration_months or 0
+            # Total months come from the plan duration (years) plus any extra months.
+            # Using only `payment_duration_months` (which defaults to 0) silently skipped
+            # all installment generation for most plans.
+            total_months = (plan.payment_duration or 0) * 12 + (plan.payment_duration_months or 0)
 
             if total_months <= 0:
                 continue
@@ -172,10 +175,9 @@ class SaleOrder(models.Model):
                 }))
                 seq += 1
 
-            total_months = plan.payment_duration_months or 0
-            annual_count = plan.annual_installments_count or 0
+            annual_count = plan.annual_installments_count if plan.annual_installments_count > 0 else (plan.payment_duration or 0)
 
-            if annual_count > 0 and total_months > 0:
+            if annual_total_amount > 0 and annual_count > 0:
                 for i in range(1, annual_count + 1):
                     lines.append((0, 0, {
                         'sequence': seq,
