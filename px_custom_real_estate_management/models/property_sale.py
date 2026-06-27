@@ -502,7 +502,7 @@ class PropertySale(models.Model):
                 'order_line': [(0, 0, {
                     'name': rec.name or "Property Sale",
                     'product_id': product_id,
-                    'price_unit': rec.sale_price,
+                    'price_unit': rec.price_after_dis,
                     'product_uom_qty': 1,
                 })]
             })
