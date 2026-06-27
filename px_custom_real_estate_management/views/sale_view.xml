@@ -57,13 +57,11 @@
                                 <button name="action_round_installments"
                                         string="Round"
                                         type="object"
-                                        class="btn-secondary"
-                                        icon="fa-calculator"/>
+                                        class="btn-secondary"/>
                                 <button name="action_rebalance_installments"
                                         string="Rebalance"
                                         type="object"
-                                        class="btn-secondary"
-                                        icon="fa-balance-scale"/>
+                                        class="btn-secondary"/>
                             </div>
                         </group>
                     </group>
