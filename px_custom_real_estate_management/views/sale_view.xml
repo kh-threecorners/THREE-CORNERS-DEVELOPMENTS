@@ -51,17 +51,27 @@
                             <field name="installment_round_direction"/>
                         </group>
                         <group>
-                            <button name="action_round_installments"
-                                    string="Round"
-                                    type="object"
-                                    class="btn-secondary"
-                                    icon="fa-calculator"/>
+                            <field name="installment_total_target" readonly="1"/>
+                            <field name="installment_difference" readonly="1"/>
+                            <div class="o_row">
+                                <button name="action_round_installments"
+                                        string="Round"
+                                        type="object"
+                                        class="btn-secondary"
+                                        icon="fa-calculator"/>
+                                <button name="action_rebalance_installments"
+                                        string="Rebalance"
+                                        type="object"
+                                        class="btn-secondary"
+                                        icon="fa-balance-scale"/>
+                            </div>
                         </group>
                     </group>
                     <field name="installment_line_ids">
                         <list editable="bottom">
                             <field name="sequence"/>
                             <field name="name"/>
+                            <field name="line_type"/>
                             <field name="capital_repayment"/>
                             <field name="amount_after_tax"/>
                             <field name="remaining_capital"/>

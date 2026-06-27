@@ -30,6 +30,25 @@ class SaleOrder(models.Model):
         string="Rounding Direction",
         default='up',
     )
+    installment_total_target = fields.Float(
+        string="Installments Target Total",
+        copy=False,
+        help="The total the installment schedule must add up to. Captured when the "
+             "schedule is generated and held fixed while rebalancing.",
+    )
+    installment_difference = fields.Float(
+        string="Difference",
+        compute="_compute_installment_difference",
+        help="Target total minus the sum of the installment amounts. Should be 0 when "
+             "the schedule is balanced; a non-zero value means the lines no longer match "
+             "the target (click Rebalance to fix).",
+    )
+
+    @api.depends('installment_total_target', 'installment_line_ids.capital_repayment')
+    def _compute_installment_difference(self):
+        for order in self:
+            lines_total = sum(order.installment_line_ids.mapped('capital_repayment'))
+            order.installment_difference = round(order.installment_total_target - lines_total, 2)
 
     so_installment_invoice_count = fields.Integer(
         string="SO Installment Invoices",
@@ -172,6 +191,137 @@ class SaleOrder(models.Model):
             amounts.append(remainder)
         return amounts
 
+    @staticmethod
+    def _absorb_difference(amounts, diff, normal):
+        """Push `diff` into the tail of the periodic amounts list.
+
+        diff > 0: grow the last installment up to `normal`; overflow spills into
+        new `normal`-sized installments plus a final partial.
+        diff < 0: shrink/remove installments from the tail.
+        Returns the new list, or None when a negative diff cannot be absorbed
+        (it would drive the periodic total below zero).
+        """
+        P = [round(a, 2) for a in amounts]
+        diff = round(diff, 2)
+        if abs(diff) < 0.005 or not P:
+            return P
+        if diff > 0:
+            room = round(normal - P[-1], 2)
+            if diff <= room + 0.005:
+                P[-1] = round(P[-1] + diff, 2)
+                return P
+            P[-1] = round(normal, 2)
+            remaining = round(diff - room, 2)
+            while remaining > normal + 0.005:
+                P.append(round(normal, 2))
+                remaining = round(remaining - normal, 2)
+            if remaining > 0.005:
+                P.append(remaining)
+            return P
+        remaining = round(-diff, 2)
+        while remaining > 0.005 and P:
+            last = P[-1]
+            if last > remaining + 0.005:
+                P[-1] = round(last - remaining, 2)
+                remaining = 0.0
+            else:
+                remaining = round(remaining - last, 2)
+                P.pop()
+        if remaining > 0.005:
+            return None
+        return P
+
+    def action_rebalance_installments(self):
+        """Button: hold the target total fixed and push the difference (created by
+        editing the down payment / maintenance amount) into the periodic block."""
+        self.ensure_one()
+        if self.installment_invoice_created:
+            raise ValidationError(_(
+                "Installment invoices have already been created for this order. "
+                "Rebalancing would desync those invoices. "
+                "Cancel/delete the existing installment invoices first."
+            ))
+        if not self.installment_total_target:
+            raise ValidationError(_("Generate the installment schedule before rebalancing."))
+
+        all_lines = self.installment_line_ids.sorted('sequence')
+        periodic_lines = all_lines.filtered(lambda l: l.line_type == 'periodic')
+        if not periodic_lines:
+            raise ValidationError(_("There are no periodic installments to absorb the difference."))
+
+        current_sum = round(sum(all_lines.mapped('capital_repayment')), 2)
+        diff = round(self.installment_total_target - current_sum, 2)
+        if abs(diff) < 0.005:
+            return True  # already balanced
+
+        periodic_amounts = periodic_lines.mapped('capital_repayment')
+        normal = max(periodic_amounts)
+        new_amounts = self._absorb_difference(periodic_amounts, diff, normal)
+        if new_amounts is None:
+            raise ValidationError(_(
+                "The change is larger than the periodic installments can absorb. "
+                "Reduce the down payment / maintenance change, or regenerate the schedule."
+            ))
+
+        # Dates: reuse existing periodic dates; extend the cadence for any new lines.
+        plan = self.payment_id
+        interval_months = {
+            'monthly': 1,
+            'quarterly': 3,
+            'semi_annually': 6,
+        }.get(plan.payment_frequency, 1) if plan else 1
+        existing_dates = periodic_lines.mapped('collection_date')
+        periodic_dates = []
+        last_date = existing_dates[-1] if existing_dates else (
+            self.installment_start_date or fields.Date.context_today(self)
+        )
+        for idx in range(len(new_amounts)):
+            if idx < len(existing_dates):
+                periodic_dates.append(existing_dates[idx])
+                last_date = existing_dates[idx]
+            else:
+                last_date = last_date + relativedelta(months=interval_months)
+                periodic_dates.append(last_date)
+
+        uom_id = periodic_lines[0].uom_id.id if periodic_lines[0].uom_id else False
+
+        def _keep(line):
+            return {
+                'name': line.name,
+                'line_type': line.line_type,
+                'capital_repayment': round(line.capital_repayment, 2),
+                'collection_status': line.collection_status,
+                'collection_date': line.collection_date,
+                'uom_id': line.uom_id.id if line.uom_id else False,
+            }
+
+        # Rebuild every line in canonical order: down payment, periodic, annual, maintenance.
+        ordered_vals = []
+        ordered_vals += [_keep(l) for l in all_lines.filtered(lambda l: l.line_type == 'down_payment')]
+        for idx, amount in enumerate(new_amounts):
+            ordered_vals.append({
+                'name': f'Periodic Installment {idx + 1}',
+                'line_type': 'periodic',
+                'capital_repayment': round(amount, 2),
+                'collection_status': 'not_due',
+                'collection_date': periodic_dates[idx],
+                'uom_id': uom_id,
+            })
+        ordered_vals += [_keep(l) for l in all_lines.filtered(lambda l: l.line_type == 'annual')]
+        ordered_vals += [_keep(l) for l in all_lines.filtered(lambda l: l.line_type == 'maintenance')]
+
+        # Running remaining balance + sequence.
+        running = self.installment_total_target
+        commands = [(5, 0, 0)]
+        for seq, vals in enumerate(ordered_vals, start=1):
+            running = round(running - vals['capital_repayment'], 2)
+            vals['sequence'] = seq
+            vals['remaining_capital'] = running
+            commands.append((0, 0, vals))
+
+        self.installment_line_ids = commands
+        return True
+
     def _generate_installment_lines(self):
         for order in self:
 
@@ -237,6 +387,7 @@ class SaleOrder(models.Model):
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': 'Down Payment',
+                    'line_type': 'down_payment',
                     'capital_repayment': round(down_payment, 2),
                     'remaining_capital': round(remaining_after_down, 2),
                     'collection_status': 'not_due',
@@ -264,6 +415,7 @@ class SaleOrder(models.Model):
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Periodic Installment {idx}',
+                        'line_type': 'periodic',
                         'capital_repayment': round(pre_tax_amount, 2),
                         'remaining_capital': round(running_remaining, 2),
                         'collection_status': 'not_due',
@@ -279,6 +431,7 @@ class SaleOrder(models.Model):
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Periodic Installment {i}',
+                        'line_type': 'periodic',
                         'capital_repayment': round(amount_per_installment, 2),
                         'remaining_capital': round(remaining_after_down - (i * amount_per_installment), 2),
                         'collection_status': 'not_due',
@@ -292,6 +445,7 @@ class SaleOrder(models.Model):
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': 'Last Partial Installment',
+                        'line_type': 'periodic',
                         'capital_repayment': round(amount_per_installment, 2),
                         'remaining_capital': 0.0,
                         'collection_status': 'not_due',
@@ -307,6 +461,7 @@ class SaleOrder(models.Model):
                     lines.append((0, 0, {
                         'sequence': seq,
                         'name': f'Annual Installment {i}',
+                        'line_type': 'annual',
                         'capital_repayment': round(annual_total_amount / annual_count, 2),
                         'remaining_capital': round(
                             remaining_after_down - ((i * annual_total_amount) / annual_count), 2),
@@ -325,6 +480,7 @@ class SaleOrder(models.Model):
                 lines.append((0, 0, {
                     'sequence': seq,
                     'name': 'Maintenance Installment',
+                    'line_type': 'maintenance',
                     'capital_repayment': round(maintenance_value, 2),
                     'remaining_capital': 0.0,
                     'collection_status': 'not_due',
@@ -340,6 +496,11 @@ class SaleOrder(models.Model):
                     seq += 1
 
             order.installment_line_ids = lines
+            # Capture the total the schedule must always add up to; rebalancing keeps
+            # this fixed while shifting the difference into the periodic block.
+            order.installment_total_target = round(
+                sum(command[2]['capital_repayment'] for command in lines if command[0] == 0), 2
+            )
 
 
 
@@ -480,6 +641,12 @@ class SaleOrderInstallmentLine(models.Model):
     sale_order_id = fields.Many2one('sale.order', string='Sale Order', ondelete='cascade')
     sequence = fields.Integer(string='Seq.')
     name = fields.Char(string='Description')
+    line_type = fields.Selection([
+        ('down_payment', 'Down Payment'),
+        ('periodic', 'Periodic'),
+        ('annual', 'Annual'),
+        ('maintenance', 'Maintenance'),
+    ], string="Type")
     capital_repayment = fields.Float(string='Installment Amount')
     amount_after_tax = fields.Float(
         string='Amount After Taxes',
