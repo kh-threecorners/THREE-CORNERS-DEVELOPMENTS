@@ -67,6 +67,18 @@ class SaleOrder(models.Model):
                                               related="property_id.maintenance_value",
                                               store=True,)
     property_sale_id = fields.Many2one('property.sale', string="Property Sale")
+    pay_with_cheque = fields.Boolean(
+        string="Pay with Cheque",
+        copy=False,
+        help="If set, installment invoices created from this order are marked as cheque "
+             "payments by default.",
+    )
+    cheque_number_start = fields.Integer(
+        string="Cheque Number Start",
+        copy=False,
+        help="Starting cheque number. The first installment invoice takes this number, the "
+             "second takes the next, and so on.",
+    )
     @api.depends('installment_line_ids')
     def _compute_so_installment_invoice_count(self):
         for order in self:
@@ -536,6 +548,7 @@ class SaleOrder(models.Model):
                 continue
 
             order_invoices = AccountMove
+            cheque_offset = 0
 
             for line in order.installment_line_ids:
                 if line.collection_status == 'collected':
@@ -564,6 +577,11 @@ class SaleOrder(models.Model):
                     'sale_order_installment_id': line.id,
                     'invoice_line_ids': [(0, 0, invoice_line_vals)],
                 })
+
+                if order.pay_with_cheque:
+                    invoice_vals['is_cheque'] = True
+                    invoice_vals['cheque_number'] = str(order.cheque_number_start + cheque_offset)
+                    cheque_offset += 1
 
                 invoice = AccountMove.create(invoice_vals)
                 order_invoices |= invoice

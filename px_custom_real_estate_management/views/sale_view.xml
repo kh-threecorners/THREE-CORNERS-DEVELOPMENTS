@@ -41,6 +41,8 @@
 <!--                <field name="property_id"/>-->
                 <field name="payment_id" domain="[('state', '=', 'published')]"/>
                 <field name="installment_start_date" invisible="not payment_id"/>
+                <field name="pay_with_cheque" invisible="not payment_id"/>
+                <field name="cheque_number_start" invisible="not payment_id or not pay_with_cheque"/>
 <!--                <field name="maintenance_date"/>-->
             </xpath>
             <xpath expr="//notebook" position="inside">
