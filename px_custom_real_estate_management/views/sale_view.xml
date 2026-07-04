@@ -21,6 +21,11 @@
                 </button>
             </xpath>
             <header position="inside">
+                <button name="action_generate_installments"
+                        string="Generate Installments"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not payment_id" />
                 <button name="action_create_installment_invoices"
                         string="Create Installment Invoices"
                         type="object"
@@ -30,21 +35,45 @@
                     type="object"
                     string="Create Installment Invoices"
                     class="btn-primary"
-                    invisible="state != 'sale' or not payment_id or installment_invoice_created" />
+                    invisible="not installment_line_ids or installment_invoice_created" />
             </header>
             <xpath expr="//field[@name='project_id']" position="after">
 <!--                <field name="property_id"/>-->
                 <field name="payment_id" domain="[('state', '=', 'published')]"/>
                 <field name="installment_start_date" invisible="not payment_id"/>
+                <field name="pay_with_cheque" invisible="not payment_id"/>
+                <field name="cheque_number_start" invisible="not payment_id or not pay_with_cheque"/>
 <!--                <field name="maintenance_date"/>-->
             </xpath>
             <xpath expr="//notebook" position="inside">
                 <page string="Installments" invisible="not payment_id">
+                    <group>
+                        <group>
+                            <field name="installment_round_step"/>
+                            <field name="installment_round_direction"/>
+                        </group>
+                        <group>
+                            <field name="installment_total_target" readonly="1"/>
+                            <field name="installment_difference" readonly="1"/>
+                            <div class="o_row">
+                                <button name="action_round_installments"
+                                        string="Round"
+                                        type="object"
+                                        class="btn-secondary"/>
+                                <button name="action_rebalance_installments"
+                                        string="Rebalance"
+                                        type="object"
+                                        class="btn-secondary"/>
+                            </div>
+                        </group>
+                    </group>
                     <field name="installment_line_ids">
                         <list editable="bottom">
                             <field name="sequence"/>
                             <field name="name"/>
+                            <field name="line_type"/>
                             <field name="capital_repayment"/>
+                            <field name="amount_after_tax"/>
                             <field name="remaining_capital"/>
                             <field name="collection_status"/>
                             <field name="collection_date"/>
