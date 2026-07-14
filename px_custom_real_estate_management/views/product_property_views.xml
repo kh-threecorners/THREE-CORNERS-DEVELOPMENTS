@@ -8,6 +8,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='categ_id']" position="after">
                     <field name="property_product_id"/>
+                    <field name="property_project_id"/>
                     <field name="property_maintenance_value"/>
                 </xpath>
                 <xpath expr="//div[@class='oe_button_box']" position="inside">
@@ -15,6 +16,20 @@
                             type="object"
                             string="Related Property"
                             class="btn-primary"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="product_search_form_view_inherit_property" model="ir.ui.view">
+            <field name="name">product.search.form.inherit.property</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_search_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//search" position="inside">
+                    <field name="property_project_id"/>
+                    <field name="property_product_id"/>
+                    <filter string="Project" name="group_by_property_project"
+                            context="{'group_by': 'property_project_id'}"/>
                 </xpath>
             </field>
         </record>

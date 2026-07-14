@@ -38,7 +38,7 @@
                     invisible="not installment_line_ids or installment_invoice_created" />
             </header>
             <xpath expr="//field[@name='project_id']" position="after">
-<!--                <field name="property_id"/>-->
+                <field name="property_id"/>
                 <field name="payment_id" domain="[('state', '=', 'published')]"/>
                 <field name="installment_start_date" invisible="not payment_id"/>
                 <field name="pay_with_cheque" invisible="not payment_id"/>

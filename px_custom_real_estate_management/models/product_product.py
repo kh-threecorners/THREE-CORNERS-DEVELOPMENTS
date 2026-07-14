@@ -1,7 +1,53 @@
 from odoo import api, fields, models, _
 
+
+class ProductTemplate(models.Model):
+    _inherit = 'product.template'
+
+    property_product_id = fields.Many2one('property.property', string="Property")
+    property_maintenance_value = fields.Float(
+        string="Property Maintenance Value",
+        related="property_product_id.maintenance_value",
+    )
+    property_project_id = fields.Many2one(
+        'property.project',
+        string="Project",
+        related='property_product_id.property_project_id',
+        store=True,
+        index=True,
+        readonly=True,
+    )
+
+    def action_view_related_property(self):
+        self.ensure_one()
+        if not self.property_product_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Related Property'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'property.property',
+            'res_id': self.property_product_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+
 class ProductProduct(models.Model):
     _inherit = 'product.product'
+
+    property_product_id = fields.Many2one('property.property', string="Property")
+    property_maintenance_value = fields.Float(
+        string="Property Maintenance Value",
+        related="property_product_id.maintenance_value",
+    )
+    property_project_id = fields.Many2one(
+        'property.project',
+        string="Project",
+        related='property_product_id.property_project_id',
+        store=True,
+        index=True,
+        readonly=True,
+    )
 
     property_count = fields.Integer(
         string="Properties",
@@ -20,7 +66,7 @@ class ProductProduct(models.Model):
             'name': _('Properties'),
             'type': 'ir.actions.act_window',
             'res_model': 'property.property',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('product_id', '=', self.id)],
             'context': {'default_product_id': self.id},
         }
@@ -37,5 +83,18 @@ class ProductProduct(models.Model):
             'res_model': 'property.property',
             'view_mode': 'form',
             'res_id': prop.id,
+            'target': 'current',
+        }
+
+    def action_view_related_property(self):
+        self.ensure_one()
+        if not self.property_product_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Related Property'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'property.property',
+            'res_id': self.property_product_id.id,
+            'view_mode': 'form',
             'target': 'current',
         }

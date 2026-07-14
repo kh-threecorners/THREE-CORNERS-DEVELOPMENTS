@@ -56,11 +56,21 @@ class PropertyProperty(models.Model):
         string="Sale Orders",
         compute="_compute_sale_order_count"
     )
+    invoice_count = fields.Integer(
+        string="Invoices",
+        compute="_compute_invoice_count"
+    )
 
     def _compute_sale_order_count(self):
         for rec in self:
             rec.sale_order_count = self.env['sale.order'].search_count([
-                ('origin', '=', rec.name)
+                ('property_id', '=', rec.id)
+            ])
+
+    def _compute_invoice_count(self):
+        for rec in self:
+            rec.invoice_count = self.env['account.move'].search_count([
+                ('property_id', '=', rec.id)
             ])
 
     def action_view_sale_orders(self):
@@ -71,8 +81,20 @@ class PropertyProperty(models.Model):
             'type': 'ir.actions.act_window',
             'res_model': 'sale.order',
             'view_mode': 'list,form',
-            'domain': [('origin', '=', self.name)],
-            'context': {'default_origin': self.name},
+            'domain': [('property_id', '=', self.id)],
+            'context': {'default_property_id': self.id},
+        }
+
+    def action_view_invoices(self):
+        """Open all invoices issued for this property"""
+        self.ensure_one()
+        return {
+            'name': _('Invoices'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('property_id', '=', self.id)],
+            'context': {'create': False},
         }
 
 
@@ -115,8 +137,20 @@ class PropertyProperty(models.Model):
         if action.get('res_model') == 'sale.order' and action.get('res_id'):
             sale_order = self.env['sale.order'].browse(action['res_id'])
 
+            vals = {
+                'property_id': self.id,
+                'project_id': self.property_project_id.id,
+            }
             if self.selected_payment_plan_id:
-                sale_order.payment_id = self.selected_payment_plan_id.id
+                vals['payment_id'] = self.selected_payment_plan_id.id
+            sale_order.write(vals)
+
+            # The base module looks the product up by name, which can pick a different
+            # product than the one this unit owns. Point the line at the unit's product.
+            if self.product_id:
+                sale_order.order_line.filtered(
+                    lambda line: line.product_id != self.product_id
+                ).write({'product_id': self.product_id.id})
 
         return action
     def action_set_under_maintenance(self):
@@ -154,33 +188,31 @@ class PropertyProperty(models.Model):
     #
     #     return record
 
-    def create(self, vals):
-        record = super(PropertyProperty, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super(PropertyProperty, self).create(vals_list)
 
         category = self.env['product.category'].search([('name', '=', 'property')], limit=1)
-        price = record.unit_price or 0.0
 
-        product_vals = {
-            'name': record.name,
-            'list_price': price,
-            'type': 'service',
-            'sale_ok': True,
-            'purchase_ok': False,
-            'categ_id': category.id if category else False,
-        }
+        for record in records:
+            product = self.env['product.product'].create({
+                'name': record.name,
+                'list_price': record.unit_price or 0.0,
+                'type': 'service',
+                'sale_ok': True,
+                'purchase_ok': False,
+                'categ_id': category.id if category else False,
+            })
 
-        product = self.env['product.product'].create(product_vals)
+            product.write({'property_product_id': record.id})
+            product.product_tmpl_id.write({'property_product_id': record.id})
 
-        product.write({'property_product_id': record.id})
+            record.product_id = product.id
 
-        product.product_tmpl_id.write({'property_product_id': record.id})
+            if record.selected_payment_plan_id:
+                record._onchange_selected_payment_plan_id()
 
-        record.product_id = product.id
-
-        if record.selected_payment_plan_id:
-            record._onchange_selected_payment_plan_id()
-
-        return record
+        return records
 
     def write(self, vals):
         res = super(PropertyProperty, self).write(vals)

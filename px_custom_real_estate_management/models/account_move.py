@@ -14,8 +14,41 @@ class AccountMove(models.Model):
         string="SO Installment"
     )
     installment_id = fields.Many2one("crm.lead.installment", string="Installment")
-    sale_order_id = fields.Many2one("sale.order", string="Sale Order")
+    sale_order_id = fields.Many2one("sale.order", string="Sale Order", index=True, copy=False)
     property_installment_id = fields.Many2one('payment.installment.line', string="Property Installment")
+
+    # Stamped when the invoice is created, not related to sale_order_id: an invoice is a
+    # legal document and must keep the project/unit it was issued for, even if the order
+    # is edited afterwards. Writable so invoices without an order (bookings, rentals) can
+    # still carry a unit and show up in the Invoice Analysis report.
+    property_id = fields.Many2one(
+        'property.property', string="Unit", index=True, copy=False,
+    )
+    property_project_id = fields.Many2one(
+        'property.project', string="Project", index=True, copy=False,
+    )
+
+    @api.onchange('sale_order_id')
+    def _onchange_sale_order_id(self):
+        """Linking an invoice to an order by hand pulls the unit and project across."""
+        for move in self:
+            if move.sale_order_id:
+                move.property_id = move.sale_order_id.property_id
+                move.property_project_id = move.sale_order_id.project_id
+
+    def action_view_sale_order(self):
+        """Open the Sale Order this invoice was generated from."""
+        self.ensure_one()
+        if not self.sale_order_id:
+            return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Sale Order'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'res_id': self.sale_order_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
     is_cheque = fields.Boolean(string="Is Cheque")
     cheque_number = fields.Char(string="Cheque Number")
     customer_cheque_bank = fields.Char(string="Customer Cheque Bank")

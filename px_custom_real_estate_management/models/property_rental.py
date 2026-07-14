@@ -24,6 +24,18 @@ class PropertyRental(models.Model):
     def action_print_contract(self):
         return self.env.ref('px_custom_real_estate_management.property_rental_contract_report').report_action(self)
 
+    def _rental_invoice_link_vals(self):
+        """Unit/project stamped on every invoice raised from this rental, so rental
+        invoices sit alongside the sale ones in the Invoice Analysis report.
+
+        A rental has no sale order, so `sale_order_id` stays empty.
+        """
+        self.ensure_one()
+        return {
+            'property_id': self.property_id.id,
+            'property_project_id': self.property_id.property_project_id.id,
+        }
+
     @api.depends('start_date', 'end_date')
     def _compute_duration(self):
         for rec in self:
@@ -99,6 +111,7 @@ class PropertyRental(models.Model):
                         'price_unit': installment.amount,
                     })],
                     'property_rental_id': rec.id,
+                    **rec._rental_invoice_link_vals(),
                 })
 
                 installment.invoice_id = invoice.id
@@ -146,6 +159,7 @@ class PropertyRental(models.Model):
                     'price_unit': rec.security_deposit,
                 })],
                 'property_rental_id': rec.id,
+                **rec._rental_invoice_link_vals(),
             })
 
             return {
@@ -176,6 +190,7 @@ class PropertyRental(models.Model):
                 'invoice_date': fields.Date.today(),
                 'invoice_line_ids': invoice_lines,
                 'property_rental_id': rec.id,
+                **rec._rental_invoice_link_vals(),
             })
 
             return {
