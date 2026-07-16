@@ -98,22 +98,6 @@ def _backfill_invoices(env):
 
     _logger.info("Backfill: stamped unit/project on %s invoices.", stamped)
 
-    # Rental invoices have no sale order; their unit comes from the rental itself.
-    rentals = AccountMove.search([
-        ('property_rental_id', '!=', False),
-        ('property_id', '=', False),
-    ])
-    for move in rentals:
-        unit = move.property_rental_id.property_id
-        if not unit:
-            continue
-        move.write({
-            'property_id': unit.id,
-            'property_project_id': unit.property_project_id.id,
-        })
-
-    _logger.info("Backfill: stamped unit/project on %s rental invoices.", len(rentals))
-
 
 def _backfill_products(env):
     """Service products created by the old name-search paths, never linked to their unit.
