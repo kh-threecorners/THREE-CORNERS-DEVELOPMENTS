@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Real Estate | Property Management System",
-    'version': '19.0.1.1',
+    'version': '19.0.1.0',
     'sequence': 1,
     'summary': """
         Real estate system manages viewing, brochures, auctions, mapping, commissions, reporting, invoicing, payments, blacklist.

@@ -82,7 +82,10 @@ _LINK_COLUMNS = frozenset({
     'uom_id',
 })
 
-_TEXT_TYPES = ('character varying', 'text', 'character')
+# Anything that is not already an integer: varchar/text, but also jsonb (what an old
+# Char(translate=True) leaves behind — the ORM casts it via ->>'en_US' and raises the
+# same InvalidTextRepresentation).
+_NON_INTEGER_TYPES = ('integer', 'bigint')
 
 
 def _feature_tables(cr):
@@ -106,9 +109,9 @@ def _text_link_columns(cr, table):
           FROM information_schema.columns
          WHERE table_schema = current_schema()
            AND table_name = %s
-           AND data_type = ANY(%s)
+           AND NOT (data_type = ANY(%s))
         """,
-        (table, list(_TEXT_TYPES)),
+        (table, list(_NON_INTEGER_TYPES)),
     )
     return [name for (name,) in cr.fetchall() if name in _LINK_COLUMNS]
 
