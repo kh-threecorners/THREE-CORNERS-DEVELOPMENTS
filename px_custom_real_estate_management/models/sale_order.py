@@ -545,8 +545,24 @@ class SaleOrder(models.Model):
                     'price_unit': prop.unit_price or product.lst_price,
                 })]
 
+    def _prepare_invoice(self):
+        """Stamp the order/unit/project on every invoice this order produces.
+
+        Routing it through `_prepare_invoice` (rather than only the installment
+        helpers) means the standard "Create Invoice" button and down-payment
+        invoices are linked too, so they also appear in the Invoice Analysis
+        report grouped by Sale Order / Project / Unit.
+        """
+        vals = super()._prepare_invoice()
+        vals.update({
+            'sale_order_id': self.id,
+            'property_id': self.property_id.id,
+            'property_project_id': self.project_id.id,
+        })
+        return vals
+
     def _installment_invoice_link_vals(self):
-        """Fields stamped on every invoice generated from this order.
+        """Fields stamped on every installment invoice generated from this order.
 
         These are what make an invoice reachable from the order, and what the
         Invoice Analysis report groups by (Sale Order / Project / Unit).

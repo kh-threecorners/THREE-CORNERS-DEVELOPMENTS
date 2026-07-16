@@ -62,6 +62,24 @@ def _backfill_invoices(env):
         move.sale_order_id = move.sale_order_installment_id.sale_order_id
     _logger.info("Backfill: recovered the sale order on %s invoices.", len(orphans))
 
+    # CRM-path installment invoices carry `installment_id` (a crm.lead.installment)
+    # instead of a SO installment line; recover their order through the lead. Only
+    # relevant if sale_order_id was ever dropped and rebuilt by the pre-migrate.
+    crm_orphans = AccountMove.search([
+        ('sale_order_id', '=', False),
+        ('installment_id', '!=', False),
+    ])
+    crm_recovered = 0
+    for move in crm_orphans:
+        lead = move.installment_id.lead_id
+        if not lead:
+            continue
+        order = env['sale.order'].search([('opportunity_id', '=', lead.id)], limit=1)
+        if order:
+            move.sale_order_id = order.id
+            crm_recovered += 1
+    _logger.info("Backfill: recovered the sale order on %s CRM invoices.", crm_recovered)
+
     unstamped = AccountMove.search([
         ('sale_order_id', '!=', False),
         '|', ('property_id', '=', False), ('property_project_id', '=', False),
