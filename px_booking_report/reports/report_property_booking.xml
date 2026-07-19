@@ -65,7 +65,6 @@
                             <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
                                 <p><strong>طريقة الدفع:</strong> <span t-field="o.payment_method"/></p>
                                 <p><strong>القيمة الاجمالية للوحدة:</strong> <span t-field="o.sale_price"/></p>
-                                <p><strong>الخصم:</strong> <span t-field="o.maintenance_booking_percentage"/>%</p>
                                 <p><strong>القيمة المخصومه:</strong> <span t-field="o.discount_amount"/></p>
                                 <p><strong>السعر بعد الخصم:</strong> <span t-field="o.price_after_dis"/></p>
                                 <p><strong>القيمة المسددة من المقدم:</strong> <span t-field="o.paid"/></p>
