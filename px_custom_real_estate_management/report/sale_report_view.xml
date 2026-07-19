@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_product_search_property" model="ir.ui.view">
+        <field name="name">sale.report.search.property</field>
+        <field name="model">sale.report</field>
+        <field name="inherit_id" ref="sale.view_order_product_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="property_project_id"/>
+                <field name="property_id"/>
+            </xpath>
+            <!-- The view has two <group>s; anchor on a known group-by filter so these
+                 land in the Group By group and not in the filter-fields one. -->
+            <xpath expr="//filter[@name='Category']" position="after">
+                <filter string="Project" name="group_by_property_project"
+                        context="{'group_by': 'property_project_id'}"/>
+                <filter string="Unit" name="group_by_property"
+                        context="{'group_by': 'property_id'}"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -46,17 +46,17 @@ class CrmLead(models.Model):
 
         for lead in self:
             if lead.property_id:
-                product = self.env['product.product'].search(
-                    [('name', '=', lead.property_id.name)], limit=1
-                )
-
+                # The unit owns its service product; only fall back to creating one for
+                # legacy units that predate that link.
+                product = lead.property_id.product_id
                 if not product:
                     product = self.env['product.product'].create({
                         'name': lead.property_id.name,
                         'list_price': lead.property_id.unit_price,
                         'type': 'service',
-                        # 'detailed_type': 'service',
+                        'property_product_id': lead.property_id.id,
                     })
+                    lead.property_id.product_id = product.id
 
                 ctx = action.get('context', {})
                 if isinstance(ctx, str):
@@ -70,6 +70,7 @@ class CrmLead(models.Model):
                         'price_unit': lead.property_id.unit_price,
                         'name': lead.property_id.name,
                     })],
+                    'default_property_id': lead.property_id.id,
                     'default_project_id': lead.property_project_id.id if lead.property_project_id else False,
                 })
                 action['context'] = context

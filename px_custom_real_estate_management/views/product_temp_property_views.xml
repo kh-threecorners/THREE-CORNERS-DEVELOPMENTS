@@ -13,6 +13,7 @@
                 </xpath>
                 <xpath expr="//field[@name='categ_id']" position="after">
                     <field name="property_product_id"/>
+                    <field name="property_project_id"/>
                     <field name="property_maintenance_value"/>
                 </xpath>
             </field>

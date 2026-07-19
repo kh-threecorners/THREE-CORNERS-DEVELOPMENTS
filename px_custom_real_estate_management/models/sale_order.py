@@ -1,6 +1,6 @@
 import math
 
-from odoo import models, api, _, fields
+from odoo import models, api, _, fields, Command
 from dateutil.relativedelta import relativedelta
 from odoo.exceptions import ValidationError
 
@@ -16,7 +16,7 @@ class SaleOrder(models.Model):
     )
     installment_invoice_created = fields.Boolean(default=False, copy=False)
 
-    property_id = fields.Many2one('property.property', string="Property")
+    property_id = fields.Many2one('property.property', string="Property", index=True, copy=False)
     payment_id = fields.Many2one('payment.plane', string="Payment Plan")
     installment_line_ids = fields.One2many('sale.order.installment.line', 'sale_order_id', string="Installment Lines", copy=False)
     installment_round_step = fields.Integer(
@@ -358,15 +358,14 @@ class SaleOrder(models.Model):
 
             annual_total_amount = discounted_price * (plan.annual_payment_percentage / 100.0)
 
-            # Total months come from the plan duration (years) plus any extra months.
-            # Using only `payment_duration_months` (which defaults to 0) silently skipped
-            # all installment generation for most plans.
-            total_months = (plan.payment_duration or 0) * 12 + (plan.payment_duration_months or 0)
+            # The periodic schedule length is driven entirely by the plan's
+            # "Payment Duration (Months)" field.
+            total_months = plan.payment_duration_months or 0
 
             if total_months <= 0:
                 raise ValidationError(_(
                     "The selected Payment Plan '%s' has no duration set. "
-                    "Set a Payment Duration (years or months) on the plan before generating installments."
+                    "Set a Payment Duration (Months) on the plan before generating installments."
                 ) % plan.name)
 
             interval_months = {
@@ -466,7 +465,7 @@ class SaleOrder(models.Model):
                     }))
                     seq += 1
 
-            annual_count = plan.annual_installments_count if plan.annual_installments_count > 0 else (plan.payment_duration or 0)
+            annual_count = plan.annual_installments_count
 
             if annual_total_amount > 0 and annual_count > 0:
                 for i in range(1, annual_count + 1):
@@ -516,23 +515,65 @@ class SaleOrder(models.Model):
 
 
 
-    def _onchange_property_add_product(self):
+    @api.onchange('property_id')
+    def _onchange_property_id(self):
+        """Selecting a unit pulls in its project and its own service product."""
         for order in self:
-            if order.property_id and order.property_id.product_id:
-                product = order.property_id.product_id
-                order.order_line = [(5, 0, 0)]
-                order.order_line = [(0, 0, {
+            prop = order.property_id
+            if not prop:
+                continue
+
+            if prop.property_project_id and not order.project_id:
+                order.project_id = prop.property_project_id
+
+            product = prop.product_id
+            if not product:
+                continue
+
+            # Drop the line of a previously selected unit; every other line
+            # (manually added fees, extras, ...) is left untouched.
+            stale_lines = order.order_line.filtered(
+                lambda line: line.product_id.property_product_id and line.product_id != product
+            )
+            order.order_line -= stale_lines
+
+            if product not in order.order_line.mapped('product_id'):
+                order.order_line = [Command.create({
                     'product_id': product.id,
                     'name': product.name,
                     'product_uom_qty': 1,
-                    'price_unit': order.property_id.unit_price or product.lst_price,
+                    'price_unit': prop.unit_price or product.lst_price,
                 })]
 
-    # @api.depends('installment_count', 'installment_invoice_created')
-    # def _compute_installment_exist(self):
-    #     for order in self:
-    #         order.installment_invoice_exist = order.installment_count > 0 or order.installment_invoice_created
+    def _prepare_invoice(self):
+        """Stamp the order/unit/project on every invoice this order produces.
 
+        Routing it through `_prepare_invoice` (rather than only the installment
+        helpers) means the standard "Create Invoice" button and down-payment
+        invoices are linked too, so they also appear in the Invoice Analysis
+        report grouped by Sale Order / Project / Unit.
+        """
+        vals = super()._prepare_invoice()
+        vals.update({
+            'sale_order_id': self.id,
+            'property_id': self.property_id.id,
+            'property_project_id': self.project_id.id,
+        })
+        return vals
+
+    def _installment_invoice_link_vals(self):
+        """Fields stamped on every installment invoice generated from this order.
+
+        These are what make an invoice reachable from the order, and what the
+        Invoice Analysis report groups by (Sale Order / Project / Unit).
+        """
+        self.ensure_one()
+        return {
+            'sale_order_id': self.id,
+            'property_id': self.property_id.id,
+            'property_project_id': self.project_id.id,
+            'invoice_origin': self.name,
+        }
 
     def action_create_installment_invoices_from_so(self):
         """Create invoices for each installment of the Sale Order."""
@@ -573,9 +614,9 @@ class SaleOrder(models.Model):
                     'invoice_date': invoice_date,
                     'invoice_date_due': invoice_date,
                     'invoice_payment_term_id': False,
-                    'sale_order_id': order.id,
                     'sale_order_installment_id': line.id,
                     'invoice_line_ids': [(0, 0, invoice_line_vals)],
+                    **order._installment_invoice_link_vals(),
                 })
 
                 if order.pay_with_cheque:
@@ -601,7 +642,7 @@ class SaleOrder(models.Model):
     def action_create_installment_invoices(self):
         invoices = self.env['account.move']
         for order in self:
-            if order.installment_invoice_exist:
+            if order.installment_invoice_created:
                 continue
 
             lead = order.opportunity_id
@@ -612,7 +653,6 @@ class SaleOrder(models.Model):
                         'invoice_date': installment.collection_date,
                         'invoice_date_due': installment.collection_date,
                         'invoice_payment_term_id': False,
-                        'sale_order_id': order.id,
                         'installment_id': installment.id,
                         'invoice_line_ids': [(0, 0, {
                             'product_id': order.order_line[0].product_id.id if order.order_line else False,
@@ -620,6 +660,7 @@ class SaleOrder(models.Model):
                             'price_unit': installment.capital_repayment,
                             'name': installment.name,
                         })],
+                        **order._installment_invoice_link_vals(),
                     })
                     invoices |= self.env['account.move'].create(invoice_vals)
 
@@ -697,46 +738,4 @@ class SaleOrderInstallmentLine(models.Model):
                 line.amount_after_tax = res['total_included']
             else:
                 line.amount_after_tax = line.capital_repayment
-
-
-class ProductProduct(models.Model):
-    _inherit = 'product.product'
-
-    property_product_id = fields.Many2one('property.property', string="Property")
-    property_maintenance_value = fields.Float(string="Property Maintenance Value",related="property_product_id.maintenance_value")
-
-    def action_view_related_property(self):
-        self.ensure_one()
-        if not self.property_product_id:
-            return {'type': 'ir.actions.act_window_close'}
-        return {
-            'name': _('Related Property'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'property.property',
-            'res_id': self.property_product_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-
-class ProductTemplate(models.Model):
-    _inherit = 'product.template'
-
-    property_product_id = fields.Many2one('property.property', string="Property")
-    property_maintenance_value = fields.Float(string="Property Maintenance Value",related="property_product_id.maintenance_value")
-
-
-    def action_view_related_property(self):
-        self.ensure_one()
-        if not self.property_product_id:
-            return {'type': 'ir.actions.act_window_close'}
-        return {
-            'name': _('Related Property'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'property.property',
-            'res_id': self.property_product_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
 

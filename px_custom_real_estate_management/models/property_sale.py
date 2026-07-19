@@ -19,7 +19,7 @@ class PropertySale(models.Model):
 
 
     discount_amount = fields.Monetary(string="Discount Amount", store=True, compute='_compute_financials')
-    maintenance_booking_percentage = fields.Float(store=True, string="Maintenance %", default=0.0, compute='_compute_financials')
+    maintenance_booking_percentage = fields.Float(string="Maintenance %", default=0.0)
     price_after_dis = fields.Monetary(string="Price After Discount", store=True, compute='_compute_financials')
     price_after_payment = fields.Monetary(string="Price After Payment", store=True, compute='_compute_financials')
 
@@ -570,6 +570,11 @@ class PropertySale(models.Model):
                     'move_type': 'out_invoice',
                     'partner_id': rec.partner_id.id,
                     'invoice_origin': rec.name,
+                    # Link the booking invoice to its order/unit/project so it shows up
+                    # alongside the installment invoices in the Invoice Analysis report.
+                    'sale_order_id': rec.sale_order_id.id,
+                    'property_id': rec.property_id.id,
+                    'property_project_id': rec.project_id.id,
                     'invoice_line_ids': [(0, 0, {
                         'name': rec.name or "Property Invoice",
                         'price_unit': rec.sale_price,

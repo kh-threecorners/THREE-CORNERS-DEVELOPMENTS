@@ -64,14 +64,14 @@ class PropertyRental(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency',
                                   related='company_id.currency_id')
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Setting the sequence when record is created"""
-        if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code(
-                'property.rent') or 'New'
-        res = super(PropertyRental, self).create(vals)
-        return res
+        for vals in vals_list:
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'property.rent') or 'New'
+        return super(PropertyRental, self).create(vals_list)
 
     def _compute_invoice_count(self):
         """Calculates the Invoice count for the property"""
