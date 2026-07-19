@@ -283,6 +283,7 @@ class AccountMove(models.Model):
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
 
+    property_sale_id = fields.Many2one('property.sale', string="Property Sale")
     is_cheque_payment = fields.Boolean(string="Is Cheque")
     cheque_payment_number = fields.Char(string="Cheque Number")
     customer_payment_cheque_bank = fields.Char(string="Customer Cheque Bank")

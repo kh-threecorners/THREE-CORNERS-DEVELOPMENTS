@@ -15,6 +15,7 @@
     'data': [
         'data/cron.xml',
         'security/ir.model.access.csv',
+        'wizard/property_sale_payment_wizard_view.xml',
         'reports/paperformat.xml',
         'reports/report_action.xml',
         'views/h_payment_plane.xml',

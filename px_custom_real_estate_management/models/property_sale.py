@@ -45,13 +45,11 @@ class PropertySale(models.Model):
     sale_order_id = fields.Many2one("sale.order", string="Sale Order", readonly=True)
     invoice_id = fields.Many2one("account.move", string="Invoice", readonly=True)
     is_sale_order_created = fields.Boolean(string="Sale Order Created", default=False)
-    is_payment_created = fields.Boolean(string="Payment Created", default=False)
 
-    payment_id = fields.Many2one(
-        'account.payment',
-        string='Payment',
-        readonly=True
-    )
+    payment_ids = fields.One2many('account.payment', 'property_sale_id', string="Payments")
+    payment_count = fields.Integer(string="Payment Count", compute='_compute_payment_count')
+    paid = fields.Monetary(string='Paid', compute='_compute_paid', store=True)
+    remaining = fields.Monetary(string='Remaining', compute='_compute_remaining', store=True)
 
     internal_sales_person_id = fields.Many2one('res.partner', string="Sales Person ")
     internal_commission_plan_id = fields.Many2one('property.commission', string="Commission Plan")
@@ -92,6 +90,26 @@ class PropertySale(models.Model):
             rec.price_after_dis = sale_price - rec.discount_amount
 
             rec.price_after_payment = rec.price_after_dis - paid_amount
+
+    @api.depends('payment_ids.state', 'payment_ids.amount', 'payment_ids.payment_type')
+    def _compute_paid(self):
+        for rec in self:
+            rec.paid = sum(
+                payment.amount
+                for payment in rec.payment_ids
+                if payment.state in ('in_process', 'paid')
+                and payment.payment_type == 'inbound'
+            )
+
+    @api.depends('price_after_dis', 'paid')
+    def _compute_remaining(self):
+        for rec in self:
+            rec.remaining = (rec.price_after_dis or 0.0) - (rec.paid or 0.0)
+
+    @api.depends('payment_ids')
+    def _compute_payment_count(self):
+        for rec in self:
+            rec.payment_count = len(rec.payment_ids)
 
     @api.depends('external_commission_plan_id', 'price_after_dis')
     def _compute_external_commission(self):
@@ -238,9 +256,6 @@ class PropertySale(models.Model):
             if not vals.get('sale_price'):
                 vals['sale_price'] = 0.0
 
-            if not vals.get('paid'):
-                vals['paid'] = 0.0
-
             rec = super(PropertySale, self).create(vals)
 
             if rec.payment_plan_id:
@@ -259,9 +274,6 @@ class PropertySale(models.Model):
 
         if 'sale_price' in vals and not vals.get('sale_price'):
             vals['sale_price'] = 0.0
-
-        if 'paid' in vals and not vals.get('paid'):
-            vals['paid'] = 0.0
 
         res = super(PropertySale, self).write(vals)
 
@@ -592,47 +604,31 @@ class PropertySale(models.Model):
                     'res_id': invoice.id,
                 }
 
-    def action_create_downpayment(self):
-        for rec in self:
-            if not rec.partner_id:
-                raise ValidationError(_("Please select a customer before creating a payment."))
-
-            if rec.paid <= 0:
-                raise ValidationError(_("The 'Paid' amount must be greater than zero."))
-
-            payment = self.env['account.payment'].create({
-                'payment_type': 'inbound',
-                'partner_type': 'customer',
-                'partner_id': rec.partner_id.id,
-                'amount': rec.paid,
-                'payment_method_id': self.env.ref('account.account_payment_method_manual_in').id,
-                'journal_id': self.env['account.journal'].search([('type', '=', 'bank')], limit=1).id,
-            })
-            rec.write({
-                'payment_id': payment.id,
-                'is_payment_created': True,
-            })
-
+    def action_register_property_payment(self):
+        self.ensure_one()
+        if not self.partner_id:
+            raise ValidationError(_("Please select a customer before registering a payment."))
         return {
+            'name': _('Register Payment'),
             'type': 'ir.actions.act_window',
-            'name': "Payments",
-            'res_model': 'account.payment',
+            'res_model': 'property.sale.payment.wizard',
             'view_mode': 'form',
-            'res_id': payment.id,
+            'target': 'new',
+            'context': {
+                'default_property_sale_id': self.id,
+                'default_amount': self.remaining,
+            },
         }
 
-    def action_view_payment(self):
+    def action_view_payments(self):
         self.ensure_one()
-        if not self.payment_id:
-            return False
-
         return {
-            'name': _('Payment'),
+            'name': _('Payments'),
             'type': 'ir.actions.act_window',
             'res_model': 'account.payment',
-            'view_mode': 'form',
-            'res_id': self.payment_id.id,
-            'target': 'current',
+            'view_mode': 'list,form',
+            'domain': [('property_sale_id', '=', self.id)],
+            'context': {'default_property_sale_id': self.id},
         }
 
 
@@ -655,6 +651,5 @@ class PropertySaleLine(models.Model):
     )
     collection_amount = fields.Float(string="Collected Amount")
     collection_date = fields.Date(string="Collection Date")
-
 
 
