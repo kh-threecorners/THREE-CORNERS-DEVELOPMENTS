@@ -54,5 +54,11 @@ class PropertySalePaymentWizard(models.TransientModel):
             'memo': self.communication,
             'property_sale_id': self.property_sale_id.id,
         })
-        payment.action_post()
-        return {'type': 'ir.actions.act_window_close'}
+        return {
+            'name': _('Payment'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'view_mode': 'form',
+            'res_id': payment.id,
+            'target': 'current',
+        }
