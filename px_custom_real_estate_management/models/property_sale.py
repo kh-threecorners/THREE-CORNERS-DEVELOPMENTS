@@ -111,6 +111,12 @@ class PropertySale(models.Model):
         for rec in self:
             rec.payment_count = len(rec.payment_ids)
 
+    @api.onchange('property_id')
+    def _onchange_property_id_set_project(self):
+        for rec in self:
+            if rec.property_id:
+                rec.project_id = rec.property_id.property_project_id
+
     @api.depends('external_commission_plan_id', 'price_after_dis')
     def _compute_external_commission(self):
         """Calculate external broker commission based on commission plan and sale price"""
