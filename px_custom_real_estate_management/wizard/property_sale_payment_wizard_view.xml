@@ -1,0 +1,25 @@
+<odoo>
+    <record id="view_property_sale_payment_wizard_form" model="ir.ui.view">
+        <field name="name">property.sale.payment.wizard.form</field>
+        <field name="model">property.sale.payment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Register Payment">
+                <group>
+                    <field name="partner_id" readonly="1"/>
+                    <field name="journal_id"/>
+                    <field name="payment_date"/>
+                    <field name="amount"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="communication"/>
+                </group>
+                <footer>
+                    <button name="action_create_payment"
+                            type="object"
+                            string="Create Payment"
+                            class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
