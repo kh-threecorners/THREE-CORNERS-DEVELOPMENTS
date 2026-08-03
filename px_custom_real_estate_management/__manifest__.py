@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Custom Real Estate | Property Management System",
-    'version': '19.0.1.1',
+    'version': '19.0.1.2',
     'sequence': 1,
     'summary': """
         Real estate system manages viewing, brochures, auctions, mapping, commissions, reporting, invoicing, payments, blacklist.
@@ -18,6 +18,7 @@
         'wizard/property_sale_payment_wizard_view.xml',
         'reports/paperformat.xml',
         'reports/report_action.xml',
+        'views/res_config_settings_view.xml',
         'views/h_payment_plane.xml',
         'views/property_property_view.xml',
         'views/property_sale_view.xml',

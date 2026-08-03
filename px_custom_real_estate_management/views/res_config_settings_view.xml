@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_form_real_estate" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.real.estate</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='account']" position="inside">
+                <block title="Real Estate Installment Accounts" name="real_estate_installment_accounts">
+                    <setting string="Down Payment Account"
+                             help="Account used on the invoice line when a Down Payment installment is invoiced.">
+                        <field name="installment_down_payment_account_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                    </setting>
+                    <setting string="Periodic Installment Account"
+                             help="Account used on the invoice line when a periodic installment is invoiced.">
+                        <field name="installment_periodic_account_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                    </setting>
+                    <setting string="Annual Installment Account"
+                             help="Account used on the invoice line when an annual installment is invoiced.">
+                        <field name="installment_annual_account_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                    </setting>
+                    <setting string="Maintenance Account"
+                             help="Account used on the invoice line when a maintenance installment is invoiced.">
+                        <field name="installment_maintenance_account_id"
+                               options="{'no_create': True, 'no_open': True}"/>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
