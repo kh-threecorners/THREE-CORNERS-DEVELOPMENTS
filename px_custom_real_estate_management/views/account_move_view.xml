@@ -72,6 +72,9 @@
                 <field name="property_id" readonly="1"
                        invisible="not property_id"/>
             </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='name']" position="after">
+                <field name="installment_type" optional="hide"/>
+            </xpath>
         </field>
     </record>
 </odoo>

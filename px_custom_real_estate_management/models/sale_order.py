@@ -601,11 +601,14 @@ class SaleOrder(models.Model):
                     'product_uom_id': line.uom_id.id if line.uom_id else False,
                 }
 
-                # The account configured for this installment type in
-                # Settings > Invoicing overrides the product's income account.
-                account = order.company_id._get_installment_account(
+                # The type is stamped so Invoice Analysis can slice by it; the
+                # account configured for that type in Settings > Invoicing
+                # overrides the product's income account.
+                installment_type = order.company_id._resolve_installment_type(
                     line_type=line.line_type, name=line.name,
                 )
+                invoice_line_vals['installment_type'] = installment_type
+                account = order.company_id._get_installment_account(line_type=installment_type)
                 if account:
                     invoice_line_vals['account_id'] = account.id
 
@@ -656,9 +659,13 @@ class SaleOrder(models.Model):
                         'price_unit': installment.capital_repayment,
                         'name': installment.name,
                     }
-                    # Lead installments carry no type, so the account is picked
-                    # from the description ("Down Payment", "Maintenance", ...).
-                    account = order.company_id._get_installment_account(name=installment.name)
+                    # Lead installments carry no type, so it is read off the
+                    # description ("Down Payment", "Maintenance", ...).
+                    installment_type = order.company_id._resolve_installment_type(
+                        name=installment.name,
+                    )
+                    invoice_line_vals['installment_type'] = installment_type
+                    account = order.company_id._get_installment_account(line_type=installment_type)
                     if account:
                         invoice_line_vals['account_id'] = account.id
                     invoice_vals.update({
