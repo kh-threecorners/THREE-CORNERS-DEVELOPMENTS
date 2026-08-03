@@ -303,6 +303,16 @@ class AccountMoveLine(models.Model):
         help="Which installment of the payment plan this line was invoiced for.",
     )
 
+    # Mirrored from the entry so Journal Items can be grouped by project. Stored
+    # because grouping and searching cannot run through a non-stored related.
+    property_project_id = fields.Many2one(
+        related='move_id.property_project_id',
+        string="Project",
+        store=True,
+        index=True,
+        readonly=True,
+    )
+
 
 class AccountPayment(models.Model):
     _inherit = 'account.payment'
