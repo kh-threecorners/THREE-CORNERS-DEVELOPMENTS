@@ -9,6 +9,7 @@
                 <field name="sale_order_id"/>
                 <field name="property_project_id"/>
                 <field name="property_id"/>
+                <field name="installment_type"/>
             </xpath>
             <xpath expr="//group" position="inside">
                 <filter string="Sale Order" name="group_by_sale_order"
@@ -17,6 +18,8 @@
                         context="{'group_by': 'property_project_id'}"/>
                 <filter string="Unit" name="group_by_property"
                         context="{'group_by': 'property_id'}"/>
+                <filter string="Installment Type" name="group_by_installment_type"
+                        context="{'group_by': 'installment_type'}"/>
             </xpath>
         </field>
     </record>

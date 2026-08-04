@@ -4,6 +4,16 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
+# Stamped on the invoice line when an installment is invoiced. The keys match
+# sale.order.installment.line.line_type and the account settings on res.company,
+# so the three stay in step.
+INSTALLMENT_TYPE_SELECTION = [
+    ('down_payment', 'Down Payment'),
+    ('periodic', 'Periodic Installment'),
+    ('annual', 'Annual Installment'),
+    ('maintenance', 'Maintenance'),
+]
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -278,6 +288,30 @@ class AccountMove(models.Model):
                 installment.state = 'paid'
         return res
 
+
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    # Kept on the line rather than the move because Invoice Analysis reports one
+    # row per line, and because a hand-edited invoice can mix installment types.
+    installment_type = fields.Selection(
+        INSTALLMENT_TYPE_SELECTION,
+        string="Installment Type",
+        index=True,
+        copy=False,
+        help="Which installment of the payment plan this line was invoiced for.",
+    )
+
+    # Mirrored from the entry so Journal Items can be grouped by project. Stored
+    # because grouping and searching cannot run through a non-stored related.
+    property_project_id = fields.Many2one(
+        related='move_id.property_project_id',
+        string="Project",
+        store=True,
+        index=True,
+        readonly=True,
+    )
 
 
 class AccountPayment(models.Model):
