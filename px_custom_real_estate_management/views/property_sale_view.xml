@@ -218,4 +218,28 @@
             </notebook>
         </field>
     </record>
+
+    <record id="property_sale_view_search" model="ir.ui.view">
+        <field name="name">property.sale.view.search</field>
+        <field name="model">property.sale</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"
+                       string="Booking / Unit / Customer"
+                       filter_domain="['|', '|', '|', ('name', 'ilike', self), ('property_id', 'ilike', self), ('property_id.code', 'ilike', self), ('partner_id', 'ilike', self)]"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="project_id"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_project" string="Project" context="{'group_by': 'project_id'}"/>
+                    <filter name="group_by_customer" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_by_status" string="Status" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="real_estate_management.property_sale_action" model="ir.actions.act_window">
+        <field name="search_view_id" ref="property_sale_view_search"/>
+    </record>
 </odoo>
