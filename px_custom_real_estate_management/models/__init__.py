@@ -10,3 +10,5 @@ from . import res_partner
 from . import maintenance
 from . import product_product
 from . import bank_tag
+from . import res_company
+from . import res_config_settings

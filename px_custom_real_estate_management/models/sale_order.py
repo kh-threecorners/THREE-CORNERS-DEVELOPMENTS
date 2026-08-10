@@ -580,10 +580,6 @@ class SaleOrder(models.Model):
         AccountMove = self.env['account.move']
         created_invoices = AccountMove
 
-        down_payment_account = self.env['account.account'].search(
-            [('name', '=', 'دفعات حجز من العملاء')], limit=1
-        )
-
         for order in self:
             if not order.installment_line_ids:
                 continue
@@ -605,8 +601,16 @@ class SaleOrder(models.Model):
                     'product_uom_id': line.uom_id.id if line.uom_id else False,
                 }
 
-                if line.name == 'Down Payment' and down_payment_account:
-                    invoice_line_vals['account_id'] = down_payment_account.id
+                # The type is stamped so Invoice Analysis can slice by it; the
+                # account configured for that type in Settings > Invoicing
+                # overrides the product's income account.
+                installment_type = order.company_id._resolve_installment_type(
+                    line_type=line.line_type, name=line.name,
+                )
+                invoice_line_vals['installment_type'] = installment_type
+                account = order.company_id._get_installment_account(line_type=installment_type)
+                if account:
+                    invoice_line_vals['account_id'] = account.id
 
                 invoice_date = line.collection_date or fields.Date.today()
                 invoice_vals.update({
@@ -649,17 +653,27 @@ class SaleOrder(models.Model):
             if lead and lead.installment_ids:
                 for installment in lead.installment_ids:
                     invoice_vals = order._prepare_invoice()
+                    invoice_line_vals = {
+                        'product_id': order.order_line[0].product_id.id if order.order_line else False,
+                        'quantity': 1,
+                        'price_unit': installment.capital_repayment,
+                        'name': installment.name,
+                    }
+                    # Lead installments carry no type, so it is read off the
+                    # description ("Down Payment", "Maintenance", ...).
+                    installment_type = order.company_id._resolve_installment_type(
+                        name=installment.name,
+                    )
+                    invoice_line_vals['installment_type'] = installment_type
+                    account = order.company_id._get_installment_account(line_type=installment_type)
+                    if account:
+                        invoice_line_vals['account_id'] = account.id
                     invoice_vals.update({
                         'invoice_date': installment.collection_date,
                         'invoice_date_due': installment.collection_date,
                         'invoice_payment_term_id': False,
                         'installment_id': installment.id,
-                        'invoice_line_ids': [(0, 0, {
-                            'product_id': order.order_line[0].product_id.id if order.order_line else False,
-                            'quantity': 1,
-                            'price_unit': installment.capital_repayment,
-                            'name': installment.name,
-                        })],
+                        'invoice_line_ids': [(0, 0, invoice_line_vals)],
                         **order._installment_invoice_link_vals(),
                     })
                     invoices |= self.env['account.move'].create(invoice_vals)
