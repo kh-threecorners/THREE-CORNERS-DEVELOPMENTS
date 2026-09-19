@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Maintenance server action.
+        Re-aligns every DRAFT installment invoice so that:
+            invoice_date     = its Sale Order date
+            invoice_date_due = its installment collection date
+        Posted invoices are never touched.
+        Run it from: Settings > Technical > Actions > Server Actions
+        or from the Actions menu on a Sales Order.
+    -->
+    <record id="action_fix_installment_invoice_dates" model="ir.actions.server">
+        <field name="name">Fix Installment Invoice Dates (draft)</field>
+        <field name="model_id" ref="sale.model_sale_order"/>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="state">code</field>
+        <field name="code">
+orders = env['account.move'].search([
+    ('sale_order_installment_id', '!=', False),
+    ('state', '=', 'draft'),
+]).mapped('sale_order_id')
+if orders:
+    orders._sync_installment_invoice_dates()
+        </field>
+    </record>
+</odoo>
