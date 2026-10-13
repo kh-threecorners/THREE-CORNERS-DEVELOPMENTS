@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+<t t-name="tc_real_estate_dashboard.Dashboard" owl="1">
+  <div class="o_tc_re_dashboard">
+
+    <t t-if="state.loading">
+      <div class="tc-center">Loading dashboard…</div>
+    </t>
+
+    <t t-elif="state.error">
+      <div class="tc-center tc-err">
+        <b>Could not load the dashboard.</b>
+        <div t-esc="state.error"/>
+      </div>
+    </t>
+
+    <t t-else="">
+      <t t-set="v" t-value="state.v"/>
+
+      <div class="tc-head">
+        <div>
+          <h1>Real Estate Dashboard</h1>
+          <p>Portfolio, sales and collections — live from Odoo · as of <t t-esc="v.asof"/></p>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="tc-kpis">
+        <div class="tc-kpi">
+          <div class="tc-ic blue"></div>
+          <h3>Total properties</h3>
+          <div class="tc-v" t-esc="v.kpis.total"/>
+          <div class="tc-sub"><span class="tc-chip neutral" t-esc="v.kpis.projects + ' projects'"/> in portfolio</div>
+        </div>
+        <div class="tc-kpi">
+          <div class="tc-ic green"></div>
+          <h3>Available units</h3>
+          <div class="tc-v" t-esc="v.kpis.available"/>
+          <div class="tc-sub"><span class="tc-chip up" t-esc="v.kpis.availablePct + '%'"/> of portfolio</div>
+        </div>
+        <div class="tc-kpi">
+          <div class="tc-ic amber"></div>
+          <h3>Sold units</h3>
+          <div class="tc-v" t-esc="v.kpis.sold"/>
+          <div class="tc-sub"><span class="tc-chip neutral" t-esc="v.kpis.soldPct + '%'"/> of portfolio</div>
+        </div>
+        <div class="tc-kpi tc-clickable" t-on-click="() => this.openBookings()">
+          <div class="tc-ic blue"></div>
+          <h3>Bookings</h3>
+          <div class="tc-v" t-esc="v.kpis.bookings"/>
+          <div class="tc-sub"><span class="tc-chip up" t-esc="v.kpis.confirmed"/> confirmed</div>
+        </div>
+        <div class="tc-kpi">
+          <div class="tc-ic green"></div>
+          <h3>Contract value</h3>
+          <div class="tc-v">EGP <t t-esc="v.kpis.contractValue"/><small>M</small></div>
+          <div class="tc-sub">EGP <t t-esc="v.kpis.discounts"/>M discounts</div>
+        </div>
+        <div class="tc-kpi">
+          <div class="tc-ic blue"></div>
+          <h3>Collected</h3>
+          <div class="tc-v">EGP <t t-esc="v.kpis.collected"/><small>M</small></div>
+          <div class="tc-sub">EGP <t t-esc="v.kpis.remaining"/>M remaining</div>
+        </div>
+      </div>
+
+      <!-- CHART + PROJECTS -->
+      <div class="tc-row tc-r2">
+        <div class="tc-card">
+          <div class="tc-card-head"><div><h2>Sales growth</h2><p class="tc-cap">Booking value by month · last 12 months (EGP millions)</p></div></div>
+          <svg class="tc-chart" t-att-viewBox="'0 0 ' + v.chart.W + ' ' + v.chart.H" preserveAspectRatio="xMidYMid meet">
+            <t t-foreach="v.chart.ylabels" t-as="g" t-key="g_index">
+              <line t-att-x1="44" t-att-y1="g.y" t-att-x2="v.chart.W - 14" t-att-y2="g.y" class="tc-grid"/>
+              <text t-att-x="34" t-att-y="g.y + 4" text-anchor="end" class="tc-axis" t-esc="g.t"/>
+            </t>
+            <t t-foreach="v.chart.bars" t-as="b" t-key="b_index">
+              <rect t-att-x="b.x" t-att-y="b.y" t-att-width="b.w" t-att-height="b.h" rx="4" class="tc-bar"/>
+            </t>
+            <path t-att-d="v.chart.area" class="tc-area"/>
+            <path t-att-d="v.chart.line" class="tc-line"/>
+            <t t-foreach="v.chart.dots" t-as="d" t-key="d_index">
+              <circle t-att-cx="d.x" t-att-cy="d.y" r="3.2" class="tc-dot"/>
+            </t>
+            <t t-foreach="v.chart.xlabels" t-as="x" t-key="x_index">
+              <text t-att-x="x.x" t-att-y="v.chart.H - 12" text-anchor="middle" class="tc-axis" t-esc="x.t"/>
+            </t>
+            <circle t-att-cx="v.chart.peak.x" t-att-cy="v.chart.peak.y" r="5" class="tc-dot-hi"/>
+            <text t-att-x="v.chart.peak.x" t-att-y="v.chart.peak.y - 11" text-anchor="middle" class="tc-val" t-esc="v.chart.peak.t"/>
+          </svg>
+        </div>
+
+        <div class="tc-card">
+          <div class="tc-card-head"><div><h2>Units by project</h2><p class="tc-cap">Total units per development</p></div></div>
+          <div class="tc-proj">
+            <t t-foreach="v.projUnits" t-as="p" t-key="p_index">
+              <div class="tc-it">
+                <div class="tc-top"><b t-esc="p.name"/><span t-esc="p.units + ' units'"/></div>
+                <div class="tc-bar-track"><i t-att-style="'width:' + p.pct + '%'"/></div>
+              </div>
+            </t>
+          </div>
+          <div class="tc-divider">
+            <h2 class="tc-h3">Bookings by status</h2>
+            <div class="tc-proj tc-mt">
+              <t t-foreach="v.status" t-as="s" t-key="s_index">
+                <div class="tc-it">
+                  <div class="tc-top"><b t-esc="s.name"/><span t-esc="s.count"/></div>
+                  <div class="tc-bar-track"><i t-att-style="'width:' + s.pct + '%;background:' + s.color"/></div>
+                </div>
+              </t>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE + SIDE -->
+      <div class="tc-row tc-r3">
+        <div class="tc-card">
+          <div class="tc-card-head"><div><h2>Recent bookings</h2><p class="tc-cap">Latest property sales</p></div></div>
+          <div class="tc-tbl">
+            <table>
+              <thead><tr><th>Unit</th><th>Customer</th><th>Project</th><th class="r">Sale price</th><th>Status</th><th class="r">Date</th></tr></thead>
+              <tbody>
+                <t t-foreach="v.recent" t-as="r" t-key="r_index">
+                  <tr>
+                    <td><span class="tc-unit" t-esc="r.unit"/></td>
+                    <td t-esc="r.customer"/>
+                    <td class="tc-muted" t-esc="r.project"/>
+                    <td class="r" t-esc="r.price"/>
+                    <td><span t-att-class="'tc-pill ' + r.state" t-esc="r.stateLabel"/></td>
+                    <td class="r tc-muted" t-esc="r.date"/>
+                  </tr>
+                </t>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tc-side">
+          <div class="tc-card">
+            <div class="tc-card-head"><div><h2>Collections</h2><p class="tc-cap">Paid vs remaining</p></div></div>
+            <div class="tc-ring-box">
+              <div class="tc-ring" t-att-style="'--p:' + v.ring.pct">
+                <div class="tc-ring-in"><b t-esc="v.ring.pct + '%'"/><span>collected</span></div>
+              </div>
+              <div class="tc-leg">
+                <div class="tc-l"><span class="tc-sw" style="background:var(--tc-accent)"/>Paid <b t-esc="v.ring.paid + 'M'"/></div>
+                <div class="tc-l"><span class="tc-sw" style="background:var(--tc-track)"/>Remaining <b t-esc="v.ring.remaining + 'M'"/></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tc-card">
+            <div class="tc-card-head"><div><h2>Collections by project</h2><p class="tc-cap">Paid / total (EGP M)</p></div></div>
+            <div class="tc-proj">
+              <t t-foreach="v.collproj" t-as="c" t-key="c_index">
+                <div class="tc-it">
+                  <div class="tc-top"><b t-esc="c.name"/><span t-esc="c.paidM + 'M / ' + c.totM + 'M · ' + c.pct + '%'"/></div>
+                  <div class="tc-bar-track"><i t-att-style="'width:' + c.pct + '%'"/></div>
+                </div>
+              </t>
+            </div>
+          </div>
+
+          <div class="tc-card">
+            <div class="tc-card-head"><div><h2>Top available units</h2><p class="tc-cap">Highest-priced, ready to sell</p></div></div>
+            <div class="tc-ulist">
+              <t t-foreach="v.units" t-as="u" t-key="u_index">
+                <div class="tc-u">
+                  <div class="tc-thumb" t-esc="u.unit"/>
+                  <div><div class="tc-nm" t-esc="u.unit"/><div class="tc-ml" t-esc="u.project + ' · ' + u.meter + '/m²'"/></div>
+                  <div class="tc-pr"><t t-esc="u.price"/>M<small>EGP</small></div>
+                </div>
+              </t>
+            </div>
+          </div>
+
+          <div class="tc-card">
+            <div class="tc-card-head"><div><h2>Upcoming installments</h2><p class="tc-cap">Next due</p></div></div>
+            <div class="tc-ulist">
+              <t t-foreach="v.due" t-as="d" t-key="d_index">
+                <div class="tc-u">
+                  <div class="tc-thumb warn" t-esc="d.ref.slice(0,3)"/>
+                  <div><div class="tc-nm" t-esc="d.ref"/><div class="tc-ml" t-esc="d.name + ' · ' + d.date"/></div>
+                  <div class="tc-pr"><t t-esc="d.amount"/><small>EGP</small></div>
+                </div>
+              </t>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONTHLY PERFORMANCE -->
+      <div class="tc-card">
+        <div class="tc-card-head"><div><h2>Monthly performance</h2><p class="tc-cap">Bookings &amp; value · last 6 months</p></div></div>
+        <div class="tc-tbl">
+          <table>
+            <thead><tr><th>Month</th><th class="r">Bookings</th><th class="r">Value (M)</th><th class="r">Avg / unit (M)</th></tr></thead>
+            <tbody>
+              <t t-foreach="v.perf" t-as="p" t-key="p_index">
+                <tr>
+                  <td><b t-esc="p.m"/></td>
+                  <td class="r" t-esc="p.b"/>
+                  <td class="r" t-esc="p.v"/>
+                  <td class="r tc-muted" t-esc="p.avg"/>
+                </tr>
+              </t>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tc-src">Live from Odoo 19 · property.property · property.sale · property.sale.line — Three Corners Developments</div>
+    </t>
+  </div>
+</t>
+
+</templates>
