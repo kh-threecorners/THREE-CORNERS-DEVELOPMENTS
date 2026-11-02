@@ -114,7 +114,11 @@
                             <div style="margin-top: 8px; page-break-inside: avoid;">
 
                                 <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; font-size: 16px; font-weight: bold;">التوقيعات</h3>
-<div class="row" style="display: flex; justify-content: space-around; text-align: center; padding: 4px 0; font-weight: bold; font-size: 14px; page-break-inside: avoid;">                                    <div style="width: 25%;"><p style="margin: 0;">إدارة الحسابات</p><p style="margin: 10px 0 0;">.........................</p></div>                                    <div style="width: 25%;"><p style="margin: 0;">إدارة المبيعات</p><p style="margin: 10px 0 0;">.........................</p></div>                                    <div style="width: 25%;"><p style="margin: 0;">إدارة التشغيل</p><p style="margin: 10px 0 0;">.........................</p></div>                                    <div style="width: 25%;"><p style="margin: 0;">توقيع العميل</p><p style="margin: 10px 0 0;">.........................</p></div>                                </div>
+                                <div class="row" style="display: flex; justify-content: space-around; text-align: center; padding: 4px 0; font-weight: bold; font-size: 14px; page-break-inside: avoid;">
+                                    <div style="width: 25%;"><p style="margin: 0;">إدارة الحسابات</p><p style="margin: 10px 0 0;">.........................</p></div>
+                                    <div style="width: 25%;"><p style="margin: 0;">إدارة المبيعات</p><p style="margin: 10px 0 0;">.........................</p></div>
+                                    <div style="width: 25%;"><p style="margin: 0;">إدارة التشغيل</p><p style="margin: 10px 0 0;">.........................</p></div>
+                                    <div style="width: 25%;"><p style="margin: 0;">توقيع العميل</p><p style="margin: 10px 0 0;">.........................</p></div>
                                 </div>
                             </div>
                         </div>
