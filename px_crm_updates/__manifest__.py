@@ -25,7 +25,7 @@
     # Check https://github.com/odoo/odoo/blob/16.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Uncategorized',
-    'version': '0.1',
+    'version': '0.2',
 
     'depends': ['base', 'crm', 'real_estate_management', 'mail','stock', 'account','stock_account'],
 

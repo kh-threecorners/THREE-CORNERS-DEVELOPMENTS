@@ -107,6 +107,7 @@
                 <group string="Internal Commission">
                     <group>
                         <field name="internal_sales_person_id"/>
+                        <field name="sales_manager" domain="[('user_ids', '!=', False)]"/>
                         <field name="internal_commission_plan_id" invisible="not internal_sales_person_id"/>
                     </group>
                     <group>
@@ -148,7 +149,6 @@
                     <field name="commission_type" invisible="not any_broker"/>
                     <field name="commission" invisible="not any_broker"/>
                     <field name="sales_person" invisible="1"/>
-                    <field name="sales_manager" invisible="not any_broker"/>
                 </group>
             </xpath>
             <xpath expr="//field[@name='property_id']" position="after">
@@ -162,10 +162,8 @@
             <xpath expr="//field[@name='paid']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <xpath expr="//group[@invisible='not any_broker']/field[@name='sales_manager']" position="replace"/>
             <xpath expr="//field[@name='sales_person']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//field[@name='sales_manager']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='remaining']" position="attributes">

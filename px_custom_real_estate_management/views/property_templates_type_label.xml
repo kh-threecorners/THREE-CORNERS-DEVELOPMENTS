@@ -1,0 +1,28 @@
+<odoo>
+    <!-- property_type was printed as its stored key, so the renamed units
+         showed "land" / "industry" instead of "admin" / "Medical".
+         Each xpath takes the first match left by the one before it. -->
+    <template id="property_view_type_label" inherit_id="real_estate_management.property_view">
+        <xpath expr="(//t[@t-esc='property.property_type'])[1]" position="replace">
+            <span t-field="property.property_type"/>
+        </xpath>
+        <xpath expr="(//t[@t-esc='property.property_type'])[1]" position="replace">
+            <span t-field="property.property_type"/>
+        </xpath>
+        <xpath expr="(//t[@t-esc='property.property_type'])[1]" position="replace">
+            <span t-field="property.property_type"/>
+        </xpath>
+    </template>
+
+    <template id="property_view_item_type_label" inherit_id="real_estate_management.property_view_item">
+        <xpath expr="//t[@t-esc='property_id.property_type']" position="replace">
+            <span t-field="property_id.property_type"/>
+        </xpath>
+    </template>
+
+    <template id="property_brochure_type_label" inherit_id="real_estate_management.property_brochure">
+        <xpath expr="//t[@t-esc=&quot;data['property_type']&quot;]" position="replace">
+            <span t-field="data.property_type"/>
+        </xpath>
+    </template>
+</odoo>
