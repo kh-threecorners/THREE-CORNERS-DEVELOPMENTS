@@ -40,16 +40,16 @@
         <field name="model">property.property</field>
         <field name="inherit_id" ref="real_estate_management.property_property_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@string='Land Details']" position="attributes">
+            <xpath expr="//group[@invisible='not property_type']" position="attributes">
                 <attribute name="invisible">not unit_type_id</attribute>
             </xpath>
-            <xpath expr="//group[@string='Residential Details']" position="attributes">
+            <xpath expr="//group[@invisible='not property_type']" position="attributes">
                 <attribute name="invisible">not unit_type_id</attribute>
             </xpath>
-            <xpath expr="//group[@string='Commercial Details']" position="attributes">
+            <xpath expr="//group[@invisible='not property_type']" position="attributes">
                 <attribute name="invisible">not unit_type_id</attribute>
             </xpath>
-            <xpath expr="//group[@string='Industrial Details']" position="attributes">
+            <xpath expr="//group[@invisible='not property_type']" position="attributes">
                 <attribute name="invisible">not unit_type_id</attribute>
             </xpath>
             <xpath expr="//field[@name='property_type']" position="replace">
