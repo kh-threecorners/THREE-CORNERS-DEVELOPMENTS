@@ -51,9 +51,12 @@ class TestSalesManager(TransactionCase):
         self._set_rep(self.rep_a)
         self.assertEqual(self.booking.sales_manager, self.leader_a.partner_id)
 
-    def test_unit_type_labels(self):
-        labels = dict(self.env['property.property']._fields['property_type'].selection)
-        self.assertEqual(labels['land'], 'admin')
-        self.assertEqual(labels['industry'], 'Medical')
-        self.assertNotIn('Land', labels.values())
-        self.assertNotIn('Industry', labels.values())
+    def test_unit_types_are_configurable(self):
+        Type = self.env['property.unit.type']
+        self.assertEqual(
+            self.env.ref('px_custom_real_estate_management.unit_type_admin').name, 'admin')
+        self.assertEqual(
+            self.env.ref('px_custom_real_estate_management.unit_type_medical').name, 'Medical')
+        self.assertFalse(Type.search([('name', 'in', ['Land', 'Industry'])]))
+        clinic = Type.create({'name': 'Clinic'})
+        self.assertIn(clinic, Type.search([]))

@@ -51,6 +51,7 @@ class PropertySale(models.Model):
     paid = fields.Monetary(string='Paid', compute='_compute_paid', store=True)
     remaining = fields.Monetary(string='Remaining', compute='_compute_remaining', store=True)
 
+    unit_type_id = fields.Many2one(related='property_id.unit_type_id', string="Property Type")
     internal_sales_person_id = fields.Many2one('res.partner', string="Sales Person ")
     sales_manager = fields.Many2one(
         compute="_compute_sales_manager", store=True, readonly=False,

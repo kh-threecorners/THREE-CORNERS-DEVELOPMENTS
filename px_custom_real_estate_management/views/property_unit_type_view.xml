@@ -1,0 +1,104 @@
+<odoo>
+    <record id="view_property_unit_type_list" model="ir.ui.view">
+        <field name="name">property.unit.type.list</field>
+        <field name="model">property.unit.type</field>
+        <field name="arch" type="xml">
+            <list string="Unit Types" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_property_unit_type" model="ir.actions.act_window">
+        <field name="name">Unit Types</field>
+        <field name="res_model">property.unit.type</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+    </record>
+
+    <menuitem id="menu_property_unit_type"
+              name="Unit Types"
+              parent="real_estate_management.property_configuration_menu"
+              action="action_property_unit_type"/>
+
+    <!-- Show the configurable type wherever the old selection was shown -->
+    <record id="property_property_view_tree_unit_type" model="ir.ui.view">
+        <field name="name">property.property.list.unit.type</field>
+        <field name="model">property.property</field>
+        <field name="inherit_id" ref="real_estate_management.property_property_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_type']" position="replace">
+                <field name="unit_type_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="property_property_view_form_unit_type" model="ir.ui.view">
+        <field name="name">property.property.form.unit.type</field>
+        <field name="model">property.property</field>
+        <field name="inherit_id" ref="real_estate_management.property_property_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@string='Land Details']" position="attributes">
+                <attribute name="invisible">not unit_type_id</attribute>
+            </xpath>
+            <xpath expr="//group[@string='Residential Details']" position="attributes">
+                <attribute name="invisible">not unit_type_id</attribute>
+            </xpath>
+            <xpath expr="//group[@string='Commercial Details']" position="attributes">
+                <attribute name="invisible">not unit_type_id</attribute>
+            </xpath>
+            <xpath expr="//group[@string='Industrial Details']" position="attributes">
+                <attribute name="invisible">not unit_type_id</attribute>
+            </xpath>
+            <xpath expr="//field[@name='property_type']" position="replace">
+                <field name="unit_type_id" required="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="property_property_search_panel_unit_type" model="ir.ui.view">
+        <field name="name">property.property.search.panel.unit.type</field>
+        <field name="model">property.property</field>
+        <field name="inherit_id" ref="real_estate_management.property_property_search_panel"/>
+        <field name="arch" type="xml">
+            <xpath expr="//searchpanel/field[@name='property_type']" position="replace">
+                <field name="unit_type_id" string="Property Type" enable_counters="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="property_project_view_form_unit_type" model="ir.ui.view">
+        <field name="name">property.project.form.unit.type</field>
+        <field name="model">property.project</field>
+        <field name="inherit_id" ref="real_estate_management.property_project_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_ids']/list/field[@name='property_type']" position="replace">
+                <field name="unit_type_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="property_sale_view_form_unit_type" model="ir.ui.view">
+        <field name="name">property.sale.form.unit.type</field>
+        <field name="model">property.sale</field>
+        <field name="inherit_id" ref="real_estate_management.property_sale_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_type']" position="replace">
+                <field name="unit_type_id"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_crm_lead_form_unit_type" model="ir.ui.view">
+        <field name="name">crm.lead.form.unit.type</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="px_crm_updates.view_crm_lead_form_aqar_inherit_branch"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='req_property_type']" position="replace">
+                <field name="req_unit_type_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

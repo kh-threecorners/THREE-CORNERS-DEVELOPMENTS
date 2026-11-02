@@ -54,7 +54,7 @@
                             <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
                                 <p><strong>كود الوحدة:</strong> <span t-field="o.model_number"/></p>
                                 <p><strong>رقم الدور:</strong> <span t-field="o.floor_number"/></p>
-                                <p><strong>نوع الوحدة:</strong> <span t-field="o.property_type"/></p>
+                                <p><strong>نوع الوحدة:</strong> <span t-field="o.unit_type_id"/></p>
                                 <!--                                <p><strong>نوع التشطيب:</strong> <span t-field="o.finishing_type"/></p>-->
                                 <p><strong>المساحة:</strong> <span t-field="o.property_id.total_sq_feet"/></p>
                                 <p><strong>اسم المشروع:</strong> <span t-field="o.project_id"/></p>

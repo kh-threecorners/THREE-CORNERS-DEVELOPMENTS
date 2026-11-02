@@ -8,3 +8,5 @@ access_property_rental_repair_user,property.rental.repair.user,model_property_re
 access_maintenance_maintenance,property.maintenance.maintenance,model_maintenance_maintenance,,1,1,1,1
 access_bank_tag,access_bank_tag,model_bank_tag,,1,1,1,1
 access_property_sale_payment_wizard,property.sale.payment.wizard,model_property_sale_payment_wizard,base.group_user,1,1,1,1
+access_property_unit_type_read,property.unit.type.read,model_property_unit_type,,1,0,0,0
+access_property_unit_type_manager,property.unit.type.manager,model_property_unit_type,real_estate_management.group_property_manager,1,1,1,1
