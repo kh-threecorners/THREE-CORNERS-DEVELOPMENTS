@@ -51,7 +51,11 @@ class PropertySale(models.Model):
     paid = fields.Monetary(string='Paid', compute='_compute_paid', store=True)
     remaining = fields.Monetary(string='Remaining', compute='_compute_remaining', store=True)
 
+    unit_type_id = fields.Many2one(related='property_id.unit_type_id', string="Property Type")
     internal_sales_person_id = fields.Many2one('res.partner', string="Sales Person ")
+    sales_manager = fields.Many2one(
+        compute="_compute_sales_manager", store=True, readonly=False,
+    )
     internal_commission_plan_id = fields.Many2one('property.commission', string="Commission Plan")
     internal_commission_type = fields.Char(compute='_compute_internal_commission', store=True, string="Commission Type")
     internal_commission = fields.Monetary(string='Commission', compute='_compute_internal_commission', store=True)
@@ -110,6 +114,13 @@ class PropertySale(models.Model):
     def _compute_payment_count(self):
         for rec in self:
             rec.payment_count = len(rec.payment_ids)
+
+    @api.depends('internal_sales_person_id', 'sales_person')
+    def _compute_sales_manager(self):
+        # Editable: a manual value stays until the salesperson changes again.
+        for rec in self:
+            user = rec.internal_sales_person_id.user_ids[:1] or rec.sales_person
+            rec.sales_manager = user.sale_team_id.user_id.partner_id
 
     @api.onchange('property_id')
     def _onchange_property_id_set_project(self):

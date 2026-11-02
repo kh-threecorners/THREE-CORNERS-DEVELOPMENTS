@@ -30,10 +30,10 @@ class CrmLead(models.Model):
 
     req_property_type = fields.Selection(
         [
-            ("land", "Land"),
+            ("land", "admin"),
             ("residential", "Residential"),
             ("commercial", "Commercial"),
-            ("industry", "Industry"),
+            ("industry", "Medical"),
         ],
         string="Required Type",
         help="The Required type of the property",

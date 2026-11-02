@@ -1,6 +1,6 @@
 {
     'name': "Booking Report",
-    'version': '19.0.1.0',
+    'version': '19.0.1.1',
     'sequence': 1,
     'summary': """
 booking report   """,
@@ -16,6 +16,7 @@ booking report   """,
         'reports/report_paperformat.xml',
         'reports/action_view.xml',
         'reports/report_property_booking.xml',
+        'reports/report_property_booking_inherit.xml',
 
     ],
     'installable': True,

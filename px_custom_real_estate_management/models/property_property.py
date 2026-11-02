@@ -7,6 +7,11 @@ from odoo.exceptions import ValidationError
 class PropertyProperty(models.Model):
     _inherit = 'property.property'
 
+    property_type = fields.Selection(required=False)
+    unit_type_id = fields.Many2one(
+        'property.unit.type', string="Type", ondelete='restrict', tracking=True,
+        help="The type of the property",
+    )
     active_payment_plan_id = fields.One2many('payment.plane', 'property_id', string="Active Payment Plan")
     original_state = fields.Selection(
         selection=lambda self: self._fields['state'].selection,
