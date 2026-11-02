@@ -1,6 +1,6 @@
 {
     'name': "Booking Report",
-    'version': '19.0.1.0',
+    'version': '19.0.1.1',
     'sequence': 1,
     'summary': """
 booking report   """,
@@ -10,12 +10,13 @@ booking report   """,
     """,
     'license': 'LGPL-3',
     'depends': ['base', 'mail', 'sale_management', 'website',
-                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact', 'real_estate_management'],
+                'base_geolocalize', 'web', 'sale', 'board', 'px_custom_contact', 'real_estate_management','px_custom_real_estate_management'],
     'data': [
         'security/ir.model.access.csv',
         'reports/report_paperformat.xml',
         'reports/action_view.xml',
         'reports/report_property_booking.xml',
+        'reports/report_property_booking_inherit.xml',
 
     ],
     'installable': True,

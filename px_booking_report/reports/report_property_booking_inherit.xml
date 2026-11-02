@@ -1,7 +1,6 @@
 <odoo>
-    <!-- The booking report was edited in Studio on the database, so its arch is
-         ahead of px_booking_report's file. Upgrading that module would replace
-         those edits, so every change goes through this inherited view. -->
+    <!-- The booking report was edited in Studio on the database, so changes to it
+         go through this inherited view instead of the template file. -->
     <template id="report_property_sale_document_custom"
               inherit_id="px_booking_report.report_property_sale_document">
         <xpath expr="//span[@t-field='o.property_type']" position="attributes">
