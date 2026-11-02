@@ -54,7 +54,7 @@
                             <div class="compact-p" style="margin-bottom: 10px; margin-top: 10px; font-size: 13px; padding-right: 0px;">
                                 <p><strong>كود الوحدة:</strong> <span t-field="o.model_number"/></p>
                                 <p><strong>رقم الدور:</strong> <span t-field="o.floor_number"/></p>
-                                <p><strong>نوع الوحدة:</strong> <span t-field="o.unit_type_id"/></p>
+                                <p><strong>نوع الوحدة:</strong> <span t-field="o.property_type"/></p>
                                 <!--                                <p><strong>نوع التشطيب:</strong> <span t-field="o.finishing_type"/></p>-->
                                 <p><strong>المساحة:</strong> <span t-field="o.property_id.total_sq_feet"/></p>
                                 <p><strong>اسم المشروع:</strong> <span t-field="o.project_id"/></p>
@@ -111,14 +111,13 @@
                                     <p><strong>مصدر العميل:</strong> <span t-field="o.broker_id"/></p>
                                 </div>
                             </div>
-                            <div style="margin-top: 8px; page-break-inside: avoid;">
+                            <div style="margin-top: 20px;">
 
                                 <h3 style="background-color: #000000; color: #ffffff; text-align: center; padding: 4px; font-size: 16px; font-weight: bold;">التوقيعات</h3>
-                                <div class="row" style="display: flex; justify-content: space-around; text-align: center; padding: 4px 0; font-weight: bold; font-size: 14px; page-break-inside: avoid;">
-                                    <div style="width: 25%;"><p style="margin: 0;">إدارة الحسابات</p><p style="margin: 10px 0 0;">.........................</p></div>
-                                    <div style="width: 25%;"><p style="margin: 0;">إدارة المبيعات</p><p style="margin: 10px 0 0;">.........................</p></div>
-                                    <div style="width: 25%;"><p style="margin: 0;">إدارة التشغيل</p><p style="margin: 10px 0 0;">.........................</p></div>
-                                    <div style="width: 25%;"><p style="margin: 0;">توقيع العميل</p><p style="margin: 10px 0 0;">.........................</p></div>
+                                <div class="row" style="display: flex; justify-content: space-around; text-align: center; padding: 10px 0; font-weight: bold; font-size: 14px; padding-right: 165px;">
+                                    <div class="col-4" style="width: 25%; padding-right: 40px;"><p>إدارة الحسابات</p><p style="margin-top: 25px; padding-right: 40x;">.........................</p></div>
+                                    <div class="col-4" style="width: 25%;"><p>مدير المبيعات</p><p style="margin-top: 25px;">.........................</p></div>
+                                    <div class="col-4" style="width: 25%;"><p>توقيع العميل</p><p style="margin-top: 25px;">.........................</p></div>
                                 </div>
                             </div>
                         </div>
