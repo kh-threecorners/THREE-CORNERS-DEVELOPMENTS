@@ -1,6 +1,6 @@
 {
     'name': "Booking Report",
-    'version': '19.0.1.1',
+    'version': '19.0.1.2',
     'sequence': 1,
     'summary': """
 booking report   """,
